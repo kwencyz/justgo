@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "421924935835",
+    "firebase_url": "https://justgoapp-575cd-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "justgoapp-575cd",
+    "storage_bucket": "justgoapp-575cd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:421924935835:android:72d1e8fb67cafaa0e98e3e",
+        "android_client_info": {
+          "package_name": "com.justgoapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "421924935835-3grjsj1gjdmtrn92n4t2prslneg9s4ra.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9x24VTTZ2bjSl-M4PZB9CvuEsdIIAJqE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "421924935835-3grjsj1gjdmtrn92n4t2prslneg9s4ra.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
