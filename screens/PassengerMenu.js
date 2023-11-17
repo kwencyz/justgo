@@ -17,12 +17,12 @@ export default function PassengerMenu() {
     const [errorMsg, setErrorMsg] = useState(null);
 
     const [pin, setPin] = React.useState({
-        latitude: 37.78825,
-        longitude: -122.4324
+        latitude: 2.9290,
+        longitude: 101.7801
     })
     const [region, setRegion] = React.useState({
-        latitude: 37.78825,
-        longitude: -122.4324,
+        latitude: 2.9290,
+        longitude: 101.7801,
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421
     })
@@ -88,7 +88,7 @@ export default function PassengerMenu() {
                             location: `${region.latitude}, ${region.longitude}`
                         }}
                         styles={{
-                            container: { width: '80%', flex: 0, position: "absolute", zIndex: 1 },
+                            container: { width: '80%', flex: 0, position: "absolute", zIndex: 1},
                             listView: { backgroundColor: "white", zIndex: 1 }
                         }}
                     />
