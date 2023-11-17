@@ -7,7 +7,7 @@ import Geocoder from 'react-native-geocoding';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import MapView, { Callout, Marker } from 'react-native-maps';
 
-Geocoder.init('AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0');
+Geocoder.init('API_KEY');
 
 export default function PassengerMenu() {
     const navigation = useNavigation();
