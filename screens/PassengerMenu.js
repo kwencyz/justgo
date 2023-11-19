@@ -7,7 +7,7 @@ import Geocoder from 'react-native-geocoding';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import MapView, { Callout, Marker } from 'react-native-maps';
 
-Geocoder.init('API_KEY');
+Geocoder.init('AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0');
 
 export default function PassengerMenu() {
     const navigation = useNavigation();
@@ -15,6 +15,7 @@ export default function PassengerMenu() {
     const [searchResults, setSearchResults] = useState([]);
     const [location, setLocation] = useState(null);
     const [errorMsg, setErrorMsg] = useState(null);
+    const [errorVisible, setErrorVisible] = useState(false);
 
     const [pin, setPin] = React.useState({
         latitude: 2.9290,
@@ -43,6 +44,26 @@ export default function PassengerMenu() {
     const handleSelectLocation = (location) => {
         // Handle the selected location
         console.log('Selected Location:', location);
+
+        if (location && location.geometry && location.geometry.location) {
+            setRegion({
+                latitude: location.geometry.location.lat,
+                longitude: location.geometry.location.lng,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+            });
+            setPin({
+                latitude: location.geometry.location.lat,
+                longitude: location.geometry.location.lng,
+            });
+            setErrorVisible(false);
+        } else {
+            // Handle the case where no matching locations are found
+            console.error('No matching locations found.');
+            // You can display an error message to the user here
+            // For example, you might set a state variable for displaying an error message in your UI
+            setErrorVisible(true);
+        }
     };
 
     return (
@@ -63,35 +84,42 @@ export default function PassengerMenu() {
 
             <View style={styles.formContainer}>
                 {/* search bar */}
-                    <GooglePlacesAutocomplete
-                        placeholder="Search"
-                        fetchDetails={true}
-                        GooglePlacesSearchQuery={{
-                            rankby: "distance"
-                        }}
-                        onPress={(data, details = null) => {
-                            // 'details' is provided when fetchDetails = true
-                            console.log(data, details)
-                            setRegion({
-                                latitude: details.geometry.location.lat,
-                                longitude: details.geometry.location.lng,
-                                latitudeDelta: 0.0922,
-                                longitudeDelta: 0.0421
-                            })
-                        }}
-                        query={{
-                            key: "AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0",
-                            language: "en",
-                            components: "country:my",
-                            types: "establishment",
-                            radius: 1000,
-                            location: `${region.latitude}, ${region.longitude}`
-                        }}
-                        styles={{
-                            container: { width: '80%', flex: 0, position: "absolute", zIndex: 1},
-                            listView: { backgroundColor: "white", zIndex: 1 }
-                        }}
-                    />
+                <GooglePlacesAutocomplete
+                    placeholder="Search"
+                    fetchDetails={true}
+                    GooglePlacesSearchQuery={{
+                        rankby: "distance"
+                    }}
+                    onPress={(data, details = null) => {
+                        // 'details' is provided when fetchDetails = true
+                        console.log(data, details);
+                        handleSelectLocation(details);
+                        setRegion({
+                            latitude: details.geometry.location.lat,
+                            longitude: details.geometry.location.lng,
+                            latitudeDelta: 0.005,
+                            longitudeDelta: 0.005
+                        })
+                    }}
+                    query={{
+                        key: "AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0",
+                        language: "en",
+                        components: "country:my",
+                        types: "establishment",
+                        radius: 1000,
+                        location: `${region.latitude}, ${region.longitude}`
+                    }}
+                    styles={{
+                        container: { width: '80%', flex: 0, position: "absolute", zIndex: 1 },
+                        listView: { backgroundColor: "white", zIndex: 1 }
+                    }}
+                />
+
+                {errorVisible && (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorText}>No matching locations found</Text>
+                    </View>
+                )}
 
                 <View style={styles.mapContainer}>
                     <MapView
@@ -234,5 +262,15 @@ const styles = StyleSheet.create({
     mapContainer: {
         flex: 1,
         paddingTop: 70,
+    },
+    errorContainer: {
+        backgroundColor: 'red',
+        padding: 10,
+        borderRadius: 5,
+        marginTop: 10,
+    },
+    errorText: {
+        color: 'white',
+        textAlign: 'center',
     },
 });
