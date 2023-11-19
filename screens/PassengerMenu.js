@@ -3,11 +3,9 @@ import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
-import Geocoder from 'react-native-geocoding';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import MapView, { Callout, Marker } from 'react-native-maps';
-
-Geocoder.init('AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0');
+import MapViewDirections from 'react-native-maps-directions';
 
 export default function PassengerMenu() {
     const navigation = useNavigation();
@@ -15,7 +13,9 @@ export default function PassengerMenu() {
     const [searchResults, setSearchResults] = useState([]);
     const [location, setLocation] = useState(null);
     const [errorMsg, setErrorMsg] = useState(null);
-    const [errorVisible, setErrorVisible] = useState(false);
+
+    const [origin, setOrigin] = useState();
+    const [destination, setDestination] = useState();
 
     const [pin, setPin] = React.useState({
         latitude: 2.9290,
@@ -24,8 +24,8 @@ export default function PassengerMenu() {
     const [region, setRegion] = React.useState({
         latitude: 2.9290,
         longitude: 101.7801,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005
     })
 
     useEffect(() => {
@@ -37,33 +37,36 @@ export default function PassengerMenu() {
             }
 
             let location = await Location.getCurrentPositionAsync({});
-            setLocation(location);
+            setRegion((prevRegion) => ({
+                ...prevRegion,
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+            }));
         })();
     }, []);
 
-    const handleSelectLocation = (location) => {
+    const handleSelectLocation = (details) => {
         // Handle the selected location
-        console.log('Selected Location:', location);
+        console.log('Selected Location:', details);
 
-        if (location && location.geometry && location.geometry.location) {
-            setRegion({
-                latitude: location.geometry.location.lat,
-                longitude: location.geometry.location.lng,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
-            });
-            setPin({
-                latitude: location.geometry.location.lat,
-                longitude: location.geometry.location.lng,
-            });
-            setErrorVisible(false);
-        } else {
-            // Handle the case where no matching locations are found
-            console.error('No matching locations found.');
-            // You can display an error message to the user here
-            // For example, you might set a state variable for displaying an error message in your UI
-            setErrorVisible(true);
-        }
+        // Set destination coordinates
+        const destinationCoordinates = {
+            latitude: details.geometry.location.lat,
+            longitude: details.geometry.location.lng,
+        };
+        setDestination(destinationCoordinates);
+
+        // Set origin coordinates to the current location
+        const currentLocation = region;
+        setOrigin(currentLocation);
+
+        // Move to the selected location
+        setRegion({
+            latitude: details.geometry.location.lat,
+            longitude: details.geometry.location.lng,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+        });
     };
 
     return (
@@ -92,14 +95,14 @@ export default function PassengerMenu() {
                     }}
                     onPress={(data, details = null) => {
                         // 'details' is provided when fetchDetails = true
-                        console.log(data, details);
-                        handleSelectLocation(details);
-                        setRegion({
+                        console.log(data, details)
+                        handleSelectLocation(details)
+                        /*setRegion({
                             latitude: details.geometry.location.lat,
                             longitude: details.geometry.location.lng,
                             latitudeDelta: 0.005,
                             longitudeDelta: 0.005
-                        })
+                        })*/
                     }}
                     query={{
                         key: "AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0",
@@ -107,7 +110,7 @@ export default function PassengerMenu() {
                         components: "country:my",
                         types: "establishment",
                         radius: 1000,
-                        location: `${region.latitude}, ${region.longitude}`
+                        location: '${region.latitude}, ${region.longitude}'
                     }}
                     styles={{
                         container: { width: '80%', flex: 0, position: "absolute", zIndex: 1 },
@@ -115,32 +118,28 @@ export default function PassengerMenu() {
                     }}
                 />
 
-                {errorVisible && (
-                    <View style={styles.errorContainer}>
-                        <Text style={styles.errorText}>No matching locations found</Text>
-                    </View>
-                )}
-
                 <View style={styles.mapContainer}>
                     <MapView
                         style={styles.map}
-                        region={{
-                            latitude: region.latitude,
-                            longitude: region.longitude,
-                            latitudeDelta: 0.001,
-                            longitudeDelta: 0.001,
-                        }}
+                        region={region}
                         provider="google"
+                        showsUserLocation={true}
                     >
-                        <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
-                        <Marker
-                            coordinate={pin}
-                            pinColor="red"
-                        >
+                        <Marker coordinate={region} pinColor="red">
                             <Callout>
-                                <Text>I'm here</Text>
+                                <Text>Destination</Text>
                             </Callout>
                         </Marker>
+
+                        {origin && destination && (
+                            <MapViewDirections
+                                origin={origin}
+                                destination={destination}
+                                apikey={'AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0'}
+                                strokeWidth={3}
+                                strokeColor="red"
+                            />
+                        )}
                     </MapView>
                 </View>
             </View>
@@ -151,7 +150,7 @@ export default function PassengerMenu() {
 const styles = StyleSheet.create({
     headerContainer: {
         backgroundColor: 'maroon', // Set the background color of the header
-        padding: 5,
+        padding: 10,
         justifyContent: 'space-between',
         flexDirection: 'row', // Arrange children in a row
         marginTop: 40,
@@ -173,7 +172,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'flex-end',
-        marginRight: 10,
+        marginRight: 20,
     },
     logoImage: {
         width: 300,
@@ -262,15 +261,5 @@ const styles = StyleSheet.create({
     mapContainer: {
         flex: 1,
         paddingTop: 70,
-    },
-    errorContainer: {
-        backgroundColor: 'red',
-        padding: 10,
-        borderRadius: 5,
-        marginTop: 10,
-    },
-    errorText: {
-        color: 'white',
-        textAlign: 'center',
     },
 });
