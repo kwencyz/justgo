@@ -3,7 +3,7 @@ import axios from 'axios';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import MapView, { Callout, Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
@@ -96,6 +96,10 @@ export default function PassengerMenu() {
     const handleOrderNow = () => {
         // Add logic for handling the order now action
         console.log('Order Now pressed');
+        const showToast = () => {
+            ToastAndroid.show('We will notify once a driver accept your order', ToastAndroid.SHORT);
+        };
+        showToast()
         // You can navigate to another screen or perform any other action here
         /*toast.show("Task finished successfully", {
             type: "normal | success | warning | danger | custom",
