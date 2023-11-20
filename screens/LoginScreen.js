@@ -26,13 +26,13 @@ export default function LoginScreen() {
         }
     }
 
-    const changePassword = async () =>{
-      const response = await sendPasswordResetEmail(auth,email)
-      .then(()=>alert("Check your email to reset password"))
-      .catch((error)=>{
-          alert(error)
-      })
-  }
+    const changePassword = async () => {
+        const response = await sendPasswordResetEmail(auth, email)
+            .then(() => alert("Check your email to reset password"))
+            .catch((error) => {
+                alert(error)
+            })
+    }
 
     return (
         <KeyboardAvoidingView style={styles.container}>
