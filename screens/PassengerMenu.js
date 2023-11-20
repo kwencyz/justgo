@@ -1,7 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import MapView, { Callout, Marker } from 'react-native-maps';
@@ -17,6 +18,9 @@ export default function PassengerMenu() {
     const [origin, setOrigin] = useState();
     const [destination, setDestination] = useState();
 
+    const [distance, setDistance] = useState(null);
+    const mapRef = useRef(null);
+
     const [pin, setPin] = React.useState({
         latitude: 2.9290,
         longitude: 101.7801
@@ -27,6 +31,8 @@ export default function PassengerMenu() {
         latitudeDelta: 0.005,
         longitudeDelta: 0.005
     })
+
+    const YOUR_GOOGLE_MAPS_API_KEY = 'AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0';
 
     useEffect(() => {
         (async () => {
@@ -42,10 +48,14 @@ export default function PassengerMenu() {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
             }));
+            setOrigin({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+            });
         })();
     }, []);
 
-    const handleSelectLocation = (details) => {
+    const handleSelectLocation = async (details) => {
         // Handle the selected location
         console.log('Selected Location:', details);
 
@@ -56,10 +66,21 @@ export default function PassengerMenu() {
         };
         setDestination(destinationCoordinates);
 
-        // Set origin coordinates to the current location
         const currentLocation = region;
         setOrigin(currentLocation);
 
+        try {
+            const response = await axios.get(
+                `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${currentLocation.latitude},${currentLocation.longitude}&destinations=${destinationCoordinates.latitude},${destinationCoordinates.longitude}&key=${YOUR_GOOGLE_MAPS_API_KEY}`
+            );
+
+            const distance = response.data.rows[0].elements[0].distance.text;
+            setDistance(distance);
+
+            console.log(`Distance: ${distance}`);
+        } catch (error) {
+            console.error('Error calculating distance:', error.message);
+        }
         // Move to the selected location
         setRegion({
             latitude: details.geometry.location.lat,
@@ -97,12 +118,6 @@ export default function PassengerMenu() {
                         // 'details' is provided when fetchDetails = true
                         console.log(data, details)
                         handleSelectLocation(details)
-                        /*setRegion({
-                            latitude: details.geometry.location.lat,
-                            longitude: details.geometry.location.lng,
-                            latitudeDelta: 0.005,
-                            longitudeDelta: 0.005
-                        })*/
                     }}
                     query={{
                         key: "AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0",
@@ -125,11 +140,13 @@ export default function PassengerMenu() {
                         provider="google"
                         showsUserLocation={true}
                     >
-                        <Marker coordinate={region} pinColor="red">
-                            <Callout>
-                                <Text>Destination</Text>
-                            </Callout>
-                        </Marker>
+                        {destination && (
+                            <Marker coordinate={destination} pinColor="red">
+                                <Callout>
+                                    <Text>Your Destination</Text>
+                                </Callout>
+                            </Marker>
+                        )}
 
                         {origin && destination && (
                             <MapViewDirections
@@ -141,6 +158,9 @@ export default function PassengerMenu() {
                             />
                         )}
                     </MapView>
+                    <View style={{marginTop: 20 }}>
+                        <Text style={styles.text}>Total Distance: {distance}</Text>
+                    </View>
                 </View>
             </View>
         </KeyboardAvoidingView>
@@ -261,5 +281,9 @@ const styles = StyleSheet.create({
     mapContainer: {
         flex: 1,
         paddingTop: 70,
+    },
+    text: {
+        color: 'white',
+        fontSize: 18,
     },
 });
