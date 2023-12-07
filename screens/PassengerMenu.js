@@ -75,18 +75,42 @@ export default function PassengerMenu() {
                 return;
             }
 
-            let location = await Location.getCurrentPositionAsync({});
-            setRegion((prevRegion) => ({
-                ...prevRegion,
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-            }));
-            setOrigin({
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-            });
+            /*             let location = await Location.getCurrentPositionAsync({});
+                        setRegion((prevRegion) => ({
+                            ...prevRegion,
+                            latitude: location.coords.latitude,
+                            longitude: location.coords.longitude,
+                        }));
+                        setOrigin({
+                            latitude: location.coords.latitude,
+                            longitude: location.coords.longitude,
+                        }); */
         })();
     }, []);
+
+    const handleSelectPickupLocation = async (details) => {
+        // Handle the selected pickup location
+        console.log('Selected Pickup Location:', details);
+
+        // Set pickup location coordinates
+        const pickupCoordinates = {
+            latitude: details.geometry.location.lat,
+            longitude: details.geometry.location.lng,
+        };
+        setOrigin({
+            name: details.name,
+            address: details.formatted_address,
+            coordinates: pickupCoordinates,
+        });
+
+        // Move to the selected pickup location
+        setRegion({
+            latitude: details.geometry.location.lat,
+            longitude: details.geometry.location.lng,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+        });
+    };
 
     const handleSelectLocation = async (details) => {
         // Handle the selected location
@@ -97,14 +121,15 @@ export default function PassengerMenu() {
             latitude: details.geometry.location.lat,
             longitude: details.geometry.location.lng,
         };
-        setDestination(destinationCoordinates);
-
-        const currentLocation = region;
-        setOrigin(currentLocation);
-
+        //setDestination(destinationCoordinates);
+        setDestination({
+            name: details.name,
+            address: details.formatted_address,
+            coordinates: destinationCoordinates,
+        });
         try {
             const response = await axios.get(
-                `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${currentLocation.latitude},${currentLocation.longitude}&destinations=${destinationCoordinates.latitude},${destinationCoordinates.longitude}&key=${YOUR_GOOGLE_MAPS_API_KEY}`
+                `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.coordinates.latitude},${origin.coordinates.longitude}&destinations=${destination.coordinates.latitude},${destination.coordinates.longitude}&key=${YOUR_GOOGLE_MAPS_API_KEY}`
             );
 
             const distance = response.data.rows[0].elements[0].distance.text;
@@ -176,9 +201,30 @@ export default function PassengerMenu() {
                 </View>
 
                 <View style={styles.formContainer}>
+                    {/* search bar for pickup location */}
+                    <GooglePlacesAutocomplete
+                        placeholder="Search Pickup Location"
+                        fetchDetails={true}
+                        onPress={(data, details = null) => {
+                            console.log(data, details);
+                            handleSelectPickupLocation(details);
+                        }}
+                        query={{
+                            key: "AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0",
+                            language: 'en',
+                            components: 'country:my',
+                            types: 'establishment',
+                            radius: 1000,
+                            location: `${region.latitude}, ${region.longitude}`,
+                        }}
+                        styles={{
+                            container: { width: '44%', flex: 0, position: 'absolute', zIndex: 1, top: -10, left: 20},
+                            listView: { backgroundColor: 'white', width: '200%' },
+                        }}
+                    />
                     {/* search bar */}
                     <GooglePlacesAutocomplete
-                        placeholder="Search"
+                        placeholder="Search Destination"
                         fetchDetails={true}
                         GooglePlacesSearchQuery={{
                             rankby: "distance"
@@ -197,14 +243,14 @@ export default function PassengerMenu() {
                             location: '${region.latitude}, ${region.longitude}'
                         }}
                         styles={{
-                            container: { width: '80%', flex: 0, position: "absolute", zIndex: 1 },
-                            listView: { backgroundColor: "white", zIndex: 1 }
+                            container: { width: '44%', flex: 0, position: "absolute", zIndex: 1, top: -10, right: 20 },
+                            listView: { backgroundColor: "white", width: '200%', right: 180 }
                         }}
                     />
 
-                    <View style={{ marginTop: 50, marginBottom: 10, }}>
+                    {/* <View style={{ marginTop: 50, marginBottom: 10, }}>
                         <Text style={styles.text}>Username: {userData?.username}</Text>
-                    </View>
+                    </View> */}
 
                     <View style={styles.mapContainer}>
                         <MapView
@@ -214,7 +260,7 @@ export default function PassengerMenu() {
                             showsUserLocation={true}
                         >
                             {destination && (
-                                <Marker coordinate={destination} pinColor="red">
+                                <Marker coordinate={destination.coordinates} pinColor="red">
                                     <Callout>
                                         <Text>Your Destination</Text>
                                     </Callout>
@@ -223,8 +269,8 @@ export default function PassengerMenu() {
 
                             {origin && destination && (
                                 <MapViewDirections
-                                    origin={origin}
-                                    destination={destination}
+                                    origin={origin.coordinates}
+                                    destination={destination.coordinates}
                                     apikey={'AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0'}
                                     strokeWidth={3}
                                     strokeColor="red"
@@ -356,11 +402,12 @@ const styles = StyleSheet.create({
     },
     map: {
         width: 350,
-        height: 475,
+        height: 500,
     },
     mapContainer: {
         flex: 1,
-        paddingTop: 0,
+        paddingTop: 50,
+        zIndex: 0,
     },
     text: {
         color: 'white',

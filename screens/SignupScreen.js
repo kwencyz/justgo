@@ -46,7 +46,12 @@ export default function SignupScreen() {
       // Access Firestore instance using firestore variable
       await setDoc(doc(firestore, collectionName, auth.currentUser.uid), userData);
 
-      navigation.push('Dashboard');
+      if (userType === "Passenger") {
+        navigation.push('PassengerDashboard');
+      }else if (userType === "Driver"){
+        navigation.push('DriverDashboard');
+      }
+      
     } catch (error) {
       console.log(error);
       alert('Sign Up Failed: ' + error.message);
