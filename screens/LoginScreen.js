@@ -1,11 +1,10 @@
 /* eslint-disable no-undef */
 import { useNavigation } from '@react-navigation/native';
 import { sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, getDocs, query, where } from 'firebase/firestore'; // Import necessary Firestore functions
 import { default as React, useState } from 'react';
 import { Dimensions, Image, KeyboardAvoidingView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import SelectDropdown from 'react-native-select-dropdown';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { FIREBASE_AUTH } from '../FirebaseConfig';
+import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 const { width } = Dimensions.get('window');
 
 export default function LoginScreen() {
@@ -14,15 +13,43 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
     const userType = ["Passenger", "Driver"];
     const auth = FIREBASE_AUTH;
+    const firestore = FIRESTORE;
 
     const signIn = async () => {
         try {
             const response = await signInWithEmailAndPassword(auth, email, password);
-            //console.log(response);
-            navigation.push('Dashboard')
+            const userUID = response.user.uid;
+
+            // Query to retrieve user data from 'passengerdb'
+            const passengerQuery = query(collection(firestore, 'passengerdb'), where('uid', '==', userUID));
+            const passengerQuerySnapshot = await getDocs(passengerQuery);
+
+            // Query to retrieve user data from 'driverdb'
+            const driverQuery = query(collection(firestore, 'driverdb'), where('uid', '==', userUID));
+            const driverQuerySnapshot = await getDocs(driverQuery);
+
+            if (passengerQuerySnapshot.size > 0) {
+                passengerQuerySnapshot.forEach((doc) => {
+                    const passengerUserData = doc.data();
+                    console.log('Passenger User Data:', passengerUserData);
+                    // Navigate to Passenger Dashboard
+                    navigation.navigate('PassengerDashboard');
+                });
+            } else if (driverQuerySnapshot.size > 0) {
+                driverQuerySnapshot.forEach((doc) => {
+                    const driverUserData = doc.data();
+                    console.log('Driver User Data:', driverUserData);
+                    // Navigate to Driver Dashboard
+                    navigation.navigate('DriverDashboard');
+                });
+            } else {
+                console.log('User document does not exist.');
+            }
+
+            //navigation.push('Dashboard')
         } catch (error) {
             console.log(error);
-            alert('Login Failed' + error.message);
+            alert('Login Failed ' + error.message);
         }
     }
 
@@ -48,28 +75,6 @@ export default function LoginScreen() {
                     alwaysBounceVertical={false}
                     contentContainerStyle={styles.scrollViewContainer}>
 
-                    <SelectDropdown
-                        data={userType}
-                        onSelect={(selectedItem, index) => {
-                            console.log(selectedItem, index);
-                        }}
-                        defaultButtonText={'Select User Type'}
-                        buttonTextAfterSelection={(selectedItem, index) => {
-                            return selectedItem;
-                        }}
-                        rowTextForSelection={(item, index) => {
-                            return item;
-                        }}
-                        buttonStyle={styles.dropdown2BtnStyle}
-                        buttonTextStyle={styles.dropdown2BtnTxtStyle}
-                        renderDropdownIcon={isOpened => {
-                            return <FontAwesome name={isOpened ? 'chevron-up' : 'chevron-down'} color={'#FFF'} size={18} />;
-                        }}
-                        dropdownIconPosition={'right'}
-                        dropdownStyle={styles.dropdown2DropdownStyle}
-                        rowStyle={styles.dropdown2RowStyle}
-                        rowTextStyle={styles.dropdown2RowTxtStyle}
-                    />
                     <View style={styles.inputContainer}>
                         <TextInput value={email} style={styles.input} placeholder='Email' placeholderTextColor={'maroon'} onChangeText={(text) => setEmail(text)} />
                     </View>

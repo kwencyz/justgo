@@ -1,11 +1,11 @@
-/* eslint-disable no-undef */
 import { useNavigation } from '@react-navigation/native';
 import { createUserWithEmailAndPassword } from 'firebase/auth'; // Add this import
+import { doc, setDoc } from 'firebase/firestore';
 import { default as React, useState } from 'react';
 import { Dimensions, Image, KeyboardAvoidingView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import SelectDropdown from 'react-native-select-dropdown';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { FIREBASE_AUTH } from '../FirebaseConfig';
+import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 const { width } = Dimensions.get('window');
 
 
@@ -13,19 +13,43 @@ export default function SignupScreen() {
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
-  const userType = ["Passenger", "Driver"];
+  const role = ["Passenger", "Driver"];
+  const [userType, setUserType] = useState('');
   const [regNo, setRegNo] = useState('');
   const auth = FIREBASE_AUTH;
+  const firestore = FIRESTORE;
 
   const signUp = async () => {
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
-      //console.log(response);
-      navigation.push('Dashboard')
+      console.log('User Type:', userType);
+      // Define the collection name based on userType
+      const collectionName = userType === "Passenger" ? "passengerdb" : "driverdb";
+
+      // Access Firestore instance using firestore variable
+      const userData = {
+        uid: auth.currentUser.uid,
+        username,
+        firstName,
+        lastName,
+        userType,
+        email,
+      };
+
+      if (userType === "Driver") {
+        userData.regNo = regNo;
+      }
+
+      // Access Firestore instance using firestore variable
+      await setDoc(doc(firestore, collectionName, auth.currentUser.uid), userData);
+
+      navigation.push('Dashboard');
     } catch (error) {
       console.log(error);
-      alert('Login Failed' + error.message);
+      alert('Sign Up Failed: ' + error.message);
     }
   }
 
@@ -35,6 +59,7 @@ export default function SignupScreen() {
   const handleDropdownChange = (selectedItem, index) => {
     setSelectedUserType(selectedItem);
     setTextInputVisible(selectedItem === 'Driver');
+    setUserType(selectedItem);
   };
 
   return (
@@ -52,7 +77,7 @@ export default function SignupScreen() {
           contentContainerStyle={styles.scrollViewContainer}>
 
           <SelectDropdown
-            data={userType}
+            data={role}
             onSelect={handleDropdownChange}
             defaultButtonText={'Select User Type'}
             buttonTextAfterSelection={(selectedItem, index) => selectedItem}
@@ -72,6 +97,12 @@ export default function SignupScreen() {
           </View>
           <View style={styles.inputContainer}>
             <TextInput value={username} style={styles.input} placeholder='Username' placeholderTextColor={'maroon'} onChangeText={(text) => setUsername(text)} />
+          </View>
+          <View style={styles.inputContainer}>
+            <TextInput value={firstName} style={styles.input} placeholder='First Name' placeholderTextColor={'maroon'} onChangeText={(text) => setFirstName(text)} />
+          </View>
+          <View style={styles.inputContainer}>
+            <TextInput value={lastName} style={styles.input} placeholder='Last Name' placeholderTextColor={'maroon'} onChangeText={(text) => setLastName(text)} />
           </View>
           <View style={styles.inputContainer}>
             <TextInput value={password} style={styles.input} placeholder='Password' placeholderTextColor={'maroon'} onChangeText={(text) => setPassword(text)} secureTextEntry />
@@ -137,7 +168,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -30,
+    marginTop: -90,
   },
   logoImage: {
     width: 300,
@@ -157,6 +188,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: -100,
   },
   scrollViewContainer: {
     flexGrow: 1,
