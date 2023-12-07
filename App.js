@@ -7,6 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { default as React, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Geocoder from 'react-native-geocoding';
+import AdminMenu from './screens/AdminMenu';
 import DriverMenu from './screens/DriverMenu';
 import ForgetPassword from './screens/ForgetPassword';
 import HistoryScreen from './screens/HistoryScreen';
@@ -185,6 +186,7 @@ function App() {
             <Stack.Screen name="ForgetPass" component={ForgetPassword} options={{ headerShown: false }}/>
             <Stack.Screen name="ScreenTemplate" component={ScreenTemplate} options={{ headerShown: false }}/>
             <Stack.Screen name="DriverMenu" component={DriverMenu} options={{ headerShown: false }}/>
+            <Stack.Screen name="AdminMenu" component={AdminMenu} options={{ headerShown: false }}/>
             <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }}/>
             <Stack.Screen name="DriverDashboard" component={DriverTabNavigator} options={{ headerShown: false }}/>
           </>

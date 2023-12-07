@@ -28,6 +28,10 @@ export default function LoginScreen() {
             const driverQuery = query(collection(firestore, 'driverdb'), where('uid', '==', userUID));
             const driverQuerySnapshot = await getDocs(driverQuery);
 
+            // Query to check if the user is an admin
+            const adminQuery = query(collection(firestore, 'admindb'), where('uid', '==', userUID));
+            const adminQuerySnapshot = await getDocs(adminQuery);
+
             if (passengerQuerySnapshot.size > 0) {
                 passengerQuerySnapshot.forEach((doc) => {
                     const passengerUserData = doc.data();
@@ -41,6 +45,13 @@ export default function LoginScreen() {
                     console.log('Driver User Data:', driverUserData);
                     // Navigate to Driver Dashboard
                     navigation.navigate('DriverDashboard');
+                });
+            } else if (adminQuerySnapshot.size > 0) {
+                adminQuerySnapshot.forEach((doc) => {
+                    const adminUserData = doc.data();
+                    console.log('Admin User Data:', adminUserData);
+                    // Navigate to Admin Dashboard
+                    navigation.navigate('AdminMenu');
                 });
             } else {
                 console.log('User document does not exist.');

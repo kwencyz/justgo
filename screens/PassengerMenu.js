@@ -2,12 +2,14 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, KeyboardAvoidingView, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import MapView, { Callout, Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import { ToastProvider, useToast } from 'react-native-toast-notifications';
+import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
 export default function PassengerMenu() {
     const navigation = useNavigation();
@@ -34,6 +36,34 @@ export default function PassengerMenu() {
         latitudeDelta: 0.005,
         longitudeDelta: 0.005
     })
+
+    const [userData, setUserData] = useState(null);
+    const auth = FIREBASE_AUTH;
+    const firestore = FIRESTORE;
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                // Assuming you have stored the user ID in auth.currentUser.uid
+                const userId = auth.currentUser.uid;
+
+                // Fetch user data from Firestore
+                const userDocRef = doc(collection(firestore, 'passengerdb'), userId);
+                const userDocSnapshot = await getDoc(userDocRef);
+
+                if (userDocSnapshot.exists()) {
+                    // Set user data in state
+                    setUserData(userDocSnapshot.data());
+                } else {
+                    console.warn('User document does not exist.');
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error.message);
+            }
+        };
+
+        fetchUserData();
+    }, [auth.currentUser.uid, firestore]);
 
     const YOUR_GOOGLE_MAPS_API_KEY = 'AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0';
 
@@ -93,21 +123,39 @@ export default function PassengerMenu() {
         });
     };
 
-    const handleOrderNow = () => {
-        // Add logic for handling the order now action
-        console.log('Order Now pressed');
-        const showToast = () => {
-            ToastAndroid.show('We will notify once a driver accept your order', ToastAndroid.SHORT);
-        };
-        showToast()
-        // You can navigate to another screen or perform any other action here
-        /*toast.show("Task finished successfully", {
-            type: "normal | success | warning | danger | custom",
-            placement: "top | bottom",
-            duration: 4000,
-            offset: 30,
-            animationType: "slide-in | zoom-in",
-        });*/
+    const handleOrderNow = async () => {
+        try {
+
+            // Customize your order data
+            const orderData = {
+                origin: origin,
+                destination: destination,
+                userId: auth.currentUser.uid,
+                distance: distance,
+                timestamp: serverTimestamp(), // Firestore server timestamp
+            };
+
+            // Add data to a new "orders" collection
+            const orderDocRef = await addDoc(collection(firestore, 'orderdetailsdb'), {
+                ...orderData,
+            });
+
+            await setDoc(orderDocRef, {
+                ...orderData,
+                orderId: orderDocRef.id, // Set order ID with the auto-generated ID
+            });
+
+            console.log('Order placed successfully:', orderDocRef.id);
+
+            // Show a notification or navigate to a confirmation screen
+            console.log('Order Now pressed');
+            const showToast = () => {
+                ToastAndroid.show('We will notify you once a driver accepts your order', ToastAndroid.SHORT);
+            };
+            showToast();
+        } catch (error) {
+            console.error('Error placing order:', error.message);
+        }
     };
 
     return (
@@ -155,7 +203,7 @@ export default function PassengerMenu() {
                     />
 
                     <View style={{ marginTop: 50, marginBottom: 10, }}>
-                        <Text style={styles.text}>Username: </Text>
+                        <Text style={styles.text}>Username: {userData?.username}</Text>
                     </View>
 
                     <View style={styles.mapContainer}>
