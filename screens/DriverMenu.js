@@ -1,8 +1,45 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Button, FlatList, Image, KeyboardAvoidingView, StatusBar, StyleSheet, Text, View } from 'react-native';
+//import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
+import { collection, getDocs, getFirestore } from 'firebase/firestore';
 
-export default function HistoryScreen() {
+export default function DriverMenu() {
+
+    const [orders, setOrders] = useState([]);
+    const firestore = getFirestore();
+
+    useEffect(() => {
+        // Fetch orders from Firestore
+        const fetchOrders = async () => {
+            try {
+                const ordersRef = collection(firestore, 'orderdetailsdb'); // Use collection() function
+                const orderSnapshots = await getDocs(ordersRef); // Use getDocs() function
+                const orderDetailsData = orderSnapshots.docs.map((doc) => doc.data());
+                setOrders(orderDetailsData);
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+            }
+        };
+
+        fetchOrders();
+    }, []);
+
+    useEffect(() => {
+        const intervalId = setInterval(refreshOrders, 5000); // Refresh orders every 5 seconds
+        return () => clearInterval(intervalId); // Clean up timer on unmount
+    }, []);
+
+    const refreshOrders = async () => {
+        try {
+            const ordersRef = collection(firestore, 'orderdetailsdb');
+            const orderSnapshots = await getDocs(ordersRef);
+            const orderDetailsData = orderSnapshots.docs.map((doc) => doc.data());
+            setOrders(orderDetailsData);
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+        }
+    };
+
     return (
         <KeyboardAvoidingView style={styles.container}>
             <StatusBar backgroundColor="black" style='light' />
@@ -20,10 +57,23 @@ export default function HistoryScreen() {
             </View>
 
             <View style={styles.formContainer}>
-                {/* container */}
-                <View>
-                    <Text>I am Driver Menu Screen!!!</Text>
+                <View style={styles.refreshButtonContainer}>
+                    <Button title="Refresh Orders" onPress={refreshOrders} />
                 </View>
+                {/* Display orders in a FlatList */}
+                <FlatList
+                    data={orders}
+                    keyExtractor={(item, index) => `order-${index}`}
+                    renderItem={({ item }) => (
+                        <View>
+                            <Text>Order ID: {item.orderId}</Text>
+                            <Text>Pickup Address: {item.origin.name}</Text>
+                            <Text>Delivery Address: {item.destination.name}</Text>
+                            <Text>Total Price: {item.totalPrice}</Text>
+                            <Text>Distance: {item.distance}</Text>
+                        </View>
+                    )}
+                />
             </View>
         </KeyboardAvoidingView>
     );

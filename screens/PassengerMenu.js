@@ -127,18 +127,6 @@ export default function PassengerMenu() {
             address: details.formatted_address,
             coordinates: destinationCoordinates,
         });
-        try {
-            const response = await axios.get(
-                `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.coordinates.latitude},${origin.coordinates.longitude}&destinations=${destination.coordinates.latitude},${destination.coordinates.longitude}&key=${YOUR_GOOGLE_MAPS_API_KEY}`
-            );
-
-            const distance = response.data.rows[0].elements[0].distance.text;
-            setDistance(distance);
-
-            console.log(`Distance: ${distance}`);
-        } catch (error) {
-            console.error('Error calculating distance:', error.message);
-        }
         // Move to the selected location
         setRegion({
             latitude: details.geometry.location.lat,
@@ -147,6 +135,26 @@ export default function PassengerMenu() {
             longitudeDelta: 0.005,
         });
     };
+
+    useEffect(() => {
+        const calculateDistance = async () => {
+            // Only calculate if both origin and destination are available
+            if (origin && destination) {
+                try {
+                    const response = await axios.get(
+                        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.coordinates.latitude},${origin.coordinates.longitude}&destinations=${destination.coordinates.latitude},${destination.coordinates.longitude}&key=${YOUR_GOOGLE_MAPS_API_KEY}`
+                    );
+                    const distance = response.data.rows[0].elements[0].distance.text;
+                    setDistance(distance);
+                    console.log(`Distance: ${distance}`);
+                } catch (error) {
+                    console.error('Error calculating distance:', error.message);
+                }
+            }
+        };
+
+        calculateDistance();
+    }, [origin, destination]);
 
     const handleOrderNow = async () => {
         try {
@@ -218,7 +226,7 @@ export default function PassengerMenu() {
                             location: `${region.latitude}, ${region.longitude}`,
                         }}
                         styles={{
-                            container: { width: '44%', flex: 0, position: 'absolute', zIndex: 1, top: -10, left: 20},
+                            container: { width: '44%', flex: 0, position: 'absolute', zIndex: 1, top: -10, left: 20 },
                             listView: { backgroundColor: 'white', width: '200%' },
                         }}
                     />
