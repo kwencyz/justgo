@@ -13,8 +13,7 @@ export default function SignupScreen() {
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const role = ["Passenger", "Driver"];
   const [userType, setUserType] = useState('');
@@ -33,8 +32,7 @@ export default function SignupScreen() {
       const userData = {
         uid: auth.currentUser.uid,
         username,
-        firstName,
-        lastName,
+        phoneNumber,
         userType,
         email,
       };
@@ -104,10 +102,7 @@ export default function SignupScreen() {
             <TextInput value={username} style={styles.input} placeholder='Username' placeholderTextColor={'maroon'} onChangeText={(text) => setUsername(text)} />
           </View>
           <View style={styles.inputContainer}>
-            <TextInput value={firstName} style={styles.input} placeholder='First Name' placeholderTextColor={'maroon'} onChangeText={(text) => setFirstName(text)} />
-          </View>
-          <View style={styles.inputContainer}>
-            <TextInput value={lastName} style={styles.input} placeholder='Last Name' placeholderTextColor={'maroon'} onChangeText={(text) => setLastName(text)} />
+            <TextInput value={phoneNumber} style={styles.input} placeholder='Phone Number' placeholderTextColor={'maroon'} onChangeText={(text) => setPhoneNumber(text)} />
           </View>
           <View style={styles.inputContainer}>
             <TextInput value={password} style={styles.input} placeholder='Password' placeholderTextColor={'maroon'} onChangeText={(text) => setPassword(text)} secureTextEntry />
