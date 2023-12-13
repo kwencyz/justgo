@@ -1,12 +1,59 @@
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Button, FlatList, Image, KeyboardAvoidingView, StatusBar, StyleSheet, Text, View } from 'react-native';
-//import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
-import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { FlatList, Image, KeyboardAvoidingView, Modal, StatusBar, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
+import { FIREBASE_AUTH } from '../FirebaseConfig';
+
 
 export default function DriverMenu() {
 
     const [orders, setOrders] = useState([]);
     const firestore = getFirestore();
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+
+    const [userData, setUserData] = useState(null);
+    const auth = FIREBASE_AUTH;
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                // Assuming you have stored the user ID in auth.currentUser.uid
+                const userId = auth.currentUser.uid;
+
+                // Fetch user data from Firestore
+                const userDocRef = doc(collection(firestore, 'driverdb'), userId);
+                const userDocSnapshot = await getDoc(userDocRef);
+
+                if (userDocSnapshot.exists()) {
+                    // Set user data in state
+                    setUserData(userDocSnapshot.data());
+                } else {
+                    console.warn('User document does not exist.');
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error.message);
+            }
+        };
+
+        fetchUserData();
+    }, [auth.currentUser.uid, firestore]);
+
+    const toggleModal = (order) => {
+        setSelectedOrder(order);
+        setModalVisible(!modalVisible);
+    };
+
+    const renderItem = ({ item }) => (
+        <TouchableOpacity style={styles.FlatViewButton} onPress={() => toggleModal(item)}>
+            <View style={styles.orderItem}>
+                <Text style={styles.orderText}>Pickup Address: {item.origin.name}</Text>
+                <Text style={styles.orderText}>Delivery Address: {item.destination.name}</Text>
+                <Text style={styles.orderText}>Total Price: {item.price}</Text>
+            </View>
+        </TouchableOpacity>
+    );
+
 
     useEffect(() => {
         // Fetch orders from Firestore
@@ -40,6 +87,46 @@ export default function DriverMenu() {
         }
     };
 
+    const acceptOrder = async () => {
+        try {
+
+            // Customize your order data
+            const orderData = {
+                origin: selectedOrder.origin,
+                destination: selectedOrder.destination,
+                driverId: auth.currentUser.uid,
+                passengerId: selectedOrder.userId,
+                distance: selectedOrder.distance,
+                price: selectedOrder.price,
+                timestamp: serverTimestamp(),
+            };
+
+            // Add data to a new "orders" collection
+            const orderDocRef = await addDoc(collection(firestore, 'orderdb'), {
+                ...orderData,
+            });
+
+            await setDoc(orderDocRef, {
+                ...orderData,
+                orderId: orderDocRef.id, // Set order ID with the auto-generated ID
+            });
+
+            // Delete or hide the accepted order from the list
+            const orderToDeleteRef = doc(firestore, 'orderdetailsdb', selectedOrder.orderId);
+            await deleteDoc(orderToDeleteRef);
+            console.log('Order accepted successfully:', orderDocRef.id);
+
+            // Show a notification or navigate to a confirmation screen
+            console.log('Accept Order pressed');
+            const showToast = () => {
+                ToastAndroid.show('You have successfully accepts the order', ToastAndroid.SHORT);
+            };
+            showToast();
+        } catch (error) {
+            console.error('Error accepting order:', error.message);
+        }
+    };
+
     return (
         <KeyboardAvoidingView style={styles.container}>
             <StatusBar backgroundColor="black" style='light' />
@@ -57,23 +144,50 @@ export default function DriverMenu() {
             </View>
 
             <View style={styles.formContainer}>
-                <View style={styles.refreshButtonContainer}>
-                    <Button title="Refresh Orders" onPress={refreshOrders} />
-                </View>
+                <TouchableOpacity style={styles.refreshButton} onPress={refreshOrders}>
+                    <Text style={styles.refreshButtonText}>Refresh</Text>
+                </TouchableOpacity>
                 {/* Display orders in a FlatList */}
                 <FlatList
                     data={orders}
                     keyExtractor={(item, index) => `order-${index}`}
-                    renderItem={({ item }) => (
-                        <View>
-                            <Text>Order ID: {item.orderId}</Text>
-                            <Text>Pickup Address: {item.origin.name}</Text>
-                            <Text>Delivery Address: {item.destination.name}</Text>
-                            <Text>Total Price: {item.totalPrice}</Text>
-                            <Text>Distance: {item.distance}</Text>
-                        </View>
-                    )}
+                    renderItem={renderItem}
                 />
+
+                <Modal
+                    animationType="slide"
+                    /* if true --> modal appear same page */
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => {
+                        setModalVisible(false);
+                    }}
+                >
+                    <View style={styles.modalContainer}>
+                        {selectedOrder && (
+                            <View style={styles.modalContent}>
+                                <Text style={styles.orderText}>Order ID: {selectedOrder.orderId}</Text>
+                                <Text style={styles.orderText}>Pickup Address: {selectedOrder.origin.name}</Text>
+                                <Text style={styles.orderText}>Delivery Address: {selectedOrder.destination.name}</Text>
+                                <Text style={styles.orderText}>Distance: {selectedOrder.distance}</Text>
+                                <Text style={styles.orderText}>Total Price: {selectedOrder.price}</Text>
+
+                                <TouchableOpacity
+                                    style={styles.ModalButton}
+                                    onPress={() => setModalVisible(false)}
+                                >
+                                    <TouchableOpacity
+                                        style={styles.acceptModalButtonText}
+                                        onPress={acceptOrder}>
+                                        <Text>Accept Order</Text>
+                                    </TouchableOpacity>
+
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+                </Modal>
+
             </View>
         </KeyboardAvoidingView>
     );
@@ -112,9 +226,9 @@ const styles = StyleSheet.create({
     },
     formContainer: {
         flex: 1,
-        //justifyContent: 'top',
         alignItems: 'center',
-        marginTop: 20,
+        marginTop: 10,
+        marginBottom: 100,
     },
     inputContainer: {
         width: '80%',
@@ -186,14 +300,6 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
     },
-    map: {
-        width: 350,
-        height: 500,
-    },
-    mapContainer: {
-        flex: 1,
-        paddingTop: 70,
-    },
     errorContainer: {
         backgroundColor: 'red',
         padding: 10,
@@ -202,6 +308,66 @@ const styles = StyleSheet.create({
     },
     errorText: {
         color: 'white',
+        textAlign: 'center',
+    },
+    orderItem: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#ccc',
+        backgroundColor: 'white',
+        marginTop: 0,
+        borderRadius: 12,
+    },
+    orderText: {
+        fontSize: 16,
+        marginBottom: 5,
+        marginTop: 5,
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 0,
+        width: '80%',
+        alignItems: 'center',
+    },
+    ModalButton: {
+        marginTop: 20,
+        backgroundColor: 'red',
+        padding: 10,
+        borderRadius: 20,
+    },
+    acceptModalButtonText: {
+        color: 'white',
+        fontSize: 18,
+        textAlign: 'center',
+        paddingLeft: 10,
+        paddingRight: 10,
+    },
+    FlatViewButton: {
+        marginTop: 0,
+        padding: 10,
+        borderRadius: 20,
+    },
+    refreshButton: {
+        backgroundColor: 'red',
+        paddingLeft: 20,
+        paddingRight: 20,
+        paddingTop: 5,
+        paddingBottom: 5,
+        borderRadius: 10,
+        marginLeft: 250,
+        marginBottom: 5,
+    },
+    refreshButtonText: {
+        color: 'white',
+        fontSize: 18,
         textAlign: 'center',
     },
 });

@@ -6,8 +6,8 @@ import { Dimensions, Image, KeyboardAvoidingView, ScrollView, StatusBar, StyleSh
 import SelectDropdown from 'react-native-select-dropdown';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
-const { width } = Dimensions.get('window');
 
+const { width } = Dimensions.get('window');
 
 export default function SignupScreen() {
   const navigation = useNavigation();

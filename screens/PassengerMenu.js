@@ -22,6 +22,7 @@ export default function PassengerMenu() {
     const [destination, setDestination] = useState();
 
     const [distance, setDistance] = useState(null);
+    const [price, setPrice] = useState(null);
     const mapRef = useRef(null);
 
     const toast = useToast();
@@ -74,17 +75,6 @@ export default function PassengerMenu() {
                 setErrorMsg('Permission to access location was denied');
                 return;
             }
-
-            /*             let location = await Location.getCurrentPositionAsync({});
-                        setRegion((prevRegion) => ({
-                            ...prevRegion,
-                            latitude: location.coords.latitude,
-                            longitude: location.coords.longitude,
-                        }));
-                        setOrigin({
-                            latitude: location.coords.latitude,
-                            longitude: location.coords.longitude,
-                        }); */
         })();
     }, []);
 
@@ -146,7 +136,12 @@ export default function PassengerMenu() {
                     );
                     const distance = response.data.rows[0].elements[0].distance.text;
                     setDistance(distance);
-                    console.log(`Distance: ${distance}`);
+
+                    const formattedPrice = Math.round(parseFloat(distance.split(' ')[0]) * 1.5);
+                    const price = formattedPrice.toFixed(2);
+                    setPrice(price);
+
+                    console.log(`Distance: ${distance}, Price: ${price}`);
                 } catch (error) {
                     console.error('Error calculating distance:', error.message);
                 }
@@ -165,6 +160,7 @@ export default function PassengerMenu() {
                 destination: destination,
                 userId: auth.currentUser.uid,
                 distance: distance,
+                price: price,
                 timestamp: serverTimestamp(), // Firestore server timestamp
             };
 
