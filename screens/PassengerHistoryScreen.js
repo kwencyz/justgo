@@ -4,7 +4,7 @@ import { default as React, useEffect, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
 import CustomRatingBar from './CustomRatingBar'; //saje nak try rating jadi dalam bentuk star
 
-export default function HistoryScreen() {
+export default function PassengerHistoryScreen() {
 
   const [jobHistory, setJobHistory] = useState([]);
   const navigation = useNavigation();
