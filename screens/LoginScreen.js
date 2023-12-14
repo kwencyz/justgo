@@ -55,6 +55,7 @@ export default function LoginScreen() {
                 });
             } else {
                 console.log('User document does not exist.');
+                alert('There is no account with this email.');
             }
 
             //navigation.push('Dashboard')

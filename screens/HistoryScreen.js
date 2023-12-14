@@ -1,8 +1,73 @@
+import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import { default as React, useEffect, useState } from 'react';
+import { FlatList, Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import CustomRatingBar from './CustomRatingBar'; //saje nak try rating jadi dalam bentuk star
 
 export default function HistoryScreen() {
+
+  const [jobHistory, setJobHistory] = useState([]);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    // This is just dummy data for job history of the driver
+    //structure data ade id,date,time,start & end destination.price,status and rating
+    //This is where to implement the function to fetch the driver's job history from Firebase Firestore
+    const dummyJobHistory = [
+      {
+        id: '1',
+        date: '2023-12-10',
+        time: '10:30 AM',
+        startDestination: 'KTM, UKM',
+        endDestination: 'Kolej Pendeta Zaaba, UKM',
+        price: 'RM 10',
+        status: 'Completed',
+        rating: 4,
+      },
+      {
+        id: '2',
+        date: '2023-12-08',
+        time: '09:00 AM',
+        startDestination: 'Pusanika, UKM',
+        endDestination: 'Kolej Keris Mas, UKM',
+        price: 'RM 6',
+        status: 'Completed',
+        rating: 3,
+      },
+      // add more job history if needed
+    ];
+
+    //can fetch job history data from an API
+    setJobHistory(dummyJobHistory);
+  }, []);
+
+  const handleRatingSelection = (itemId, selectedRating) => {
+    // to manage the rating selected in the data.
+    //console.log(Job ID: ${ itemId }, Selected Rating: ${ selectedRating });
+  };
+
+  //kat bawah ni ade line untuk include custom rating bar star dalam list data utk display
+  const renderJobItem = ({ item }) => (
+    <View style={styles.jobItem}>
+      <View style={styles.jobHeader}>
+        <View>
+          <Text style={styles.date}>{item.date} at {item.time}</Text>
+        </View>
+        <View>
+          <Text style={styles.status}>{item.status}</Text>
+        </View>
+      </View>
+      <Text style={styles.destination}>{item.startDestination}</Text>
+      <Text style={styles.destination}>{item.endDestination}</Text>
+      <Text style={styles.price}>{item.price}</Text>
+      <CustomRatingBar rating={item.rating} onRatingPress={(selectedRating) => handleRatingSelection(item.id, selectedRating)} />
+    </View>
+  );
+
+  const navigateToSearchBar = () => {
+    navigation.navigate('SearchBar'); // This line is to navigate this page to suitable page (main menu.js rasanya) such as in this, SearchBar page when user push the back button
+  };
+
   return (
     <KeyboardAvoidingView style={styles.container}>
       <StatusBar backgroundColor="black" style='light' />
@@ -22,7 +87,12 @@ export default function HistoryScreen() {
       <View style={styles.formContainer}>
         {/* container */}
         <View>
-          <Text>I am History Screen!!!</Text>
+          <FlatList
+            data={jobHistory}
+            renderItem={renderJobItem}
+            keyExtractor={(item) => item.id}
+            style={styles.list}
+          />
         </View>
       </View>
     </KeyboardAvoidingView>

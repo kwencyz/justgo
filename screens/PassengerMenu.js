@@ -2,16 +2,29 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
-import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import React, { useEffect, useRef, useState } from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { default as React, useEffect, useRef, useState } from 'react';
+import { Animated, Image, KeyboardAvoidingView, Modal, PermissionsAndroid, StyleSheet, Text, TextInput, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import MapView, { Callout, Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import { ToastProvider, useToast } from 'react-native-toast-notifications';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
+PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+
 export default function PassengerMenu() {
+
+    const translateY = new Animated.Value(500);
+    const animateOrderContainer = () => {
+        Animated.timing(translateY, {
+            to: 500, // Animate to the top (0)
+            duration: 30, // Animation duration
+            useNativeDriver: true, // Smoother animations
+        }).start();
+    };
+
     const navigation = useNavigation();
     const [searchText, setSearchText] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -41,6 +54,9 @@ export default function PassengerMenu() {
     const [userData, setUserData] = useState(null);
     const auth = FIREBASE_AUTH;
     const firestore = FIRESTORE;
+
+    const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
+    const [passwordInput, setPasswordInput] = useState('');
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -103,6 +119,7 @@ export default function PassengerMenu() {
     };
 
     const handleSelectLocation = async (details) => {
+        animateOrderContainer();
         // Handle the selected location
         console.log('Selected Location:', details);
 
@@ -151,37 +168,105 @@ export default function PassengerMenu() {
         calculateDistance();
     }, [origin, destination]);
 
+    const verifyPassword = async (email, enteredPassword) => {
+        try {
+
+            // Sign in the user with email and password
+            await signInWithEmailAndPassword(auth, email, enteredPassword);
+
+            // If sign-in is successful, the password is correct
+            return true;
+
+        } catch (error) {
+            // If there's an error, the password is incorrect or the user does not exist
+            console.error('Error verifying password:', error.message);
+            return false;
+        }
+    };
+
+    const passwordVerify = async () => {
+        if (!distance) {
+            alert('Please select pickup location and destination.');
+        } else {
+            try {
+                // Display the password modal
+                setIsPasswordModalVisible(true);
+            } catch (error) {
+                console.error('Error displaying password modal:', error.message);
+            }
+        }
+    };
+
     const handleOrderNow = async () => {
         try {
 
-            // Customize your order data
-            const orderData = {
-                origin: origin,
-                destination: destination,
-                userId: auth.currentUser.uid,
-                distance: distance,
-                price: price,
-                timestamp: serverTimestamp(), // Firestore server timestamp
-            };
+            // Implement password verification
+            const isPasswordCorrect = await verifyPassword(auth.currentUser.email, passwordInput);
 
-            // Add data to a new "orders" collection
-            const orderDocRef = await addDoc(collection(firestore, 'orderdetailsdb'), {
-                ...orderData,
-            });
+            if (isPasswordCorrect) {
+                setIsPasswordModalVisible(false);
+                setPasswordInput('');
 
-            await setDoc(orderDocRef, {
-                ...orderData,
-                orderId: orderDocRef.id, // Set order ID with the auto-generated ID
-            });
+                // Fetch user's wallet balance from Firestore
+                const userDocRef = doc(firestore, 'passengerdb', auth.currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
+                const walletBalance = userDoc.data().wallet;
 
-            console.log('Order placed successfully:', orderDocRef.id);
+                // Check if wallet balance is sufficient
+                if (walletBalance >= price) {
 
-            // Show a notification or navigate to a confirmation screen
-            console.log('Order Now pressed');
-            const showToast = () => {
-                ToastAndroid.show('We will notify you once a driver accepts your order', ToastAndroid.SHORT);
-            };
-            showToast();
+                    //update wallet balance
+                    const newWalletBalance = walletBalance - price
+                    await updateDoc(userDocRef, { wallet: newWalletBalance });
+
+                    // Customize your order data
+                    const orderData = {
+                        origin: origin,
+                        destination: destination,
+                        userId: auth.currentUser.uid,
+                        distance: distance,
+                        price: price,
+                        timestamp: serverTimestamp(), // Firestore server timestamp
+                    };
+
+                    // Add data to a new "orders" collection
+                    const orderDocRef = await addDoc(collection(firestore, 'orderdetailsdb'), {
+                        ...orderData,
+                    });
+
+                    await setDoc(orderDocRef, {
+                        ...orderData,
+                        orderId: orderDocRef.id, // Set order ID with the auto-generated ID
+                    });
+
+                    console.log('Order placed successfully:', orderDocRef.id);
+
+                    // Clear input fields
+                    setOrigin('');
+                    setDestination('');
+                    setDistance('');
+                    setPrice('');
+
+                    // Show a notification or navigate to a confirmation screen
+                    console.log('Order Now pressed');
+                    const showToast = () => {
+                        ToastAndroid.show('We will notify you once a driver accepts your order', ToastAndroid.SHORT);
+                    };
+                    showToast();
+                } else {
+                    // Wallet balance is insufficient, display a toast message
+                    const showToast = () => {
+                        ToastAndroid.show('Insufficient funds in your wallet. Please top up your wallet.', ToastAndroid.SHORT);
+                    };
+                    showToast();
+                }
+            } else {
+                // Incorrect password, display a toast message or handle it accordingly
+                const showToast = () => {
+                    ToastAndroid.show('Incorrect password. Please try again.', ToastAndroid.SHORT);
+                };
+                showToast();
+            }
         } catch (error) {
             console.error('Error placing order:', error.message);
         }
@@ -252,10 +337,6 @@ export default function PassengerMenu() {
                         }}
                     />
 
-                    {/* <View style={{ marginTop: 50, marginBottom: 10, }}>
-                        <Text style={styles.text}>Username: {userData?.username}</Text>
-                    </View> */}
-
                     <View style={styles.mapContainer}>
                         <MapView
                             style={styles.map}
@@ -281,15 +362,44 @@ export default function PassengerMenu() {
                                 />
                             )}
                         </MapView>
-                        <View style={{ marginTop: 5 }}>
-                            <Text style={styles.text}>Total Distance: {distance}</Text>
+                        <Animated.View style={{ ...styles.orderContainer, transform: [{ translateY }], }}>
+                            <View style={styles.orderDetailContainer}>
+                                <Text style={{ fontSize: 18, marginLeft: 20, marginTop: 5 }}>Total Distance: {distance}</Text>
+                                <Text style={{ fontSize: 18, marginLeft: 20 }}>Total Price: {price}</Text>
+                            </View>
                             <TouchableOpacity
                                 style={styles.orderNowButton}
-                                onPress={handleOrderNow}
+                                onPress={passwordVerify}
                             >
                                 <Text style={styles.orderNowButtonText}>Order Now</Text>
                             </TouchableOpacity>
-                        </View>
+                        </Animated.View>
+                        <Modal
+                            animationType="slide"
+                            transparent={true}
+                            visible={isPasswordModalVisible}
+                            onRequestClose={() => {
+                                setIsPasswordModalVisible(false);
+                            }}>
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 10, width: 300 }}>
+                                    <Text style={{ fontSize: 18, marginBottom: 10 }}>Enter Your Password</Text>
+                                    <TextInput
+                                        secureTextEntry
+                                        style={{ borderWidth: 1, borderColor: 'gray', padding: 10, marginBottom: 10 }}
+                                        value={passwordInput}
+                                        onChangeText={(text) => setPasswordInput(text)}
+                                        placeholder="Password"
+                                    />
+                                    <TouchableOpacity
+                                        style={{ backgroundColor: 'red', padding: 10, borderRadius: 5, alignItems: 'center' }}
+                                        onPress={handleOrderNow}>
+                                        <Text style={{ color: 'white' }}>Submit</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </Modal>
+
                     </View>
                 </View>
             </ToastProvider>
@@ -350,14 +460,20 @@ const styles = StyleSheet.create({
         color: 'maroon',
     },
     buttonContainer: {
-        width: '80%',
-        marginBottom: 20,
+        position: 'relative',
+        flex: 1 / 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 25, // Adjust this value as needed for spacing
     },
     button: {
-        width: '100%',
+        flex: 1,
         backgroundColor: 'red',
-        padding: 10,
+        padding: 5,
         borderRadius: 20,
+        width: 120,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     buttonText: {
         textAlign: 'center',
@@ -405,27 +521,87 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     map: {
-        width: 350,
-        height: 500,
+        flex: 1,
+        ...StyleSheet.absoluteFillObject,
     },
     mapContainer: {
         flex: 1,
-        paddingTop: 50,
-        zIndex: 0,
+        ...StyleSheet.absoluteFillObject,
+
     },
     text: {
-        color: 'white',
+        color: 'black',
         fontSize: 18,
     },
-    orderNowButton: {
-        backgroundColor: 'red',
+    orderContainer: {
+        backgroundColor: 'rgb(210, 43, 43)',
+        marginTop: 0,
         padding: 5,
+        paddingBottom: 200,
+        borderRadius: 30,
+    },
+    orderDetailContainer: {
+        margin: 5,
+        backgroundColor: 'white',
+        padding: 10,
+        paddingBottom: 20,
+        borderRadius: 25,
+    },
+    orderNowButton: {
+        backgroundColor: 'maroon',
         borderRadius: 20,
-        marginTop: 5,
+        marginLeft: 145,
+        width: 120,
+        padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     orderNowButtonText: {
         color: 'white',
         fontSize: 18,
         textAlign: 'center',
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        width: '80%',
+        alignItems: 'center',
+    },
+    modalText: {
+        fontSize: 24,
+        marginBottom: 10,
+
+    },
+    modalTextPart: {
+        fontSize: 18,
+        marginBottom: 10,
+        marginTop: 10,
+    },
+    ModalButton: {
+        marginTop: 20,
+        backgroundColor: 'red',
+        padding: 10,
+        borderRadius: 20,
+        flexDirection: 'row',
+
+    },
+    acceptModalButtonText: {
+        color: 'white',
+        fontSize: 18,
+        textAlign: 'center',
+
+    },
+    rejectModalButtonText: {
+        color: 'white',
+        fontSize: 18,
+        textAlign: 'center',
+
     },
 });

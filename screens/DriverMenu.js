@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Modal, StatusBar, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH } from '../FirebaseConfig';
 
-
 export default function DriverMenu() {
 
     const [orders, setOrders] = useState([]);
@@ -87,6 +86,53 @@ export default function DriverMenu() {
         }
     };
 
+    // Function to send a notification using FCM
+    const sendNotification = async (userId, message) => {
+        try {
+            // Get the FCM token for the user with the specified userId
+            const userDoc = await getDoc(doc(firestore, 'passengerdb', userId));
+            const fcmToken = userDoc.data().fcmToken;
+
+            if (!fcmToken) {
+                console.error('User does not have an FCM token');
+                return;
+            }
+
+            // Send the notification using FCM
+            const payload = {
+                data: {
+                    title: 'Order Accepted',
+                    body: message,
+                },
+                token: fcmToken,
+            };
+
+            await sendToDevice(payload);
+
+            console.log('Notification sent successfully');
+        } catch (error) {
+            console.error('Error sending notification:', error.message);
+        }
+    };
+
+
+    const getPassengerFCMToken = async (passengerId) => {
+        try {
+            const passengerDocRef = doc(firestore, 'passengerdb', passengerId);
+            const passengerDocSnap = await getDoc(passengerDocRef);
+
+            if (passengerDocSnap.exists()) {
+                return passengerDocSnap.data().fcmToken;
+            } else {
+                console.error('Passenger document not found');
+                return null;
+            }
+        } catch (error) {
+            console.error('Error fetching passenger FCM token:', error.message);
+            return null;
+        }
+    };
+
     const acceptOrder = async () => {
         try {
 
@@ -111,12 +157,14 @@ export default function DriverMenu() {
                 orderId: orderDocRef.id, // Set order ID with the auto-generated ID
             });
 
+            // Show a notification or navigate to a confirmation screen
+            sendNotification(selectedOrder.userId, 'Your order has been accepted!');
+
             // Delete or hide the accepted order from the list
             const orderToDeleteRef = doc(firestore, 'orderdetailsdb', selectedOrder.orderId);
             await deleteDoc(orderToDeleteRef);
             console.log('Order accepted successfully:', orderDocRef.id);
 
-            // Show a notification or navigate to a confirmation screen
             console.log('Accept Order pressed');
             const showToast = () => {
                 ToastAndroid.show('You have successfully accepts the order', ToastAndroid.SHORT);

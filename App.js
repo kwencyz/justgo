@@ -178,17 +178,17 @@ function App() {
     <NavigationContainer>
       <Stack.Navigator>
         {isLoggedIn ? (
-          <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }}/>
+          <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }} />
         ) : (
           <>
-            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }}/>
-            <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }}/>
-            <Stack.Screen name="ForgetPass" component={ForgetPassword} options={{ headerShown: false }}/>
-            <Stack.Screen name="ScreenTemplate" component={ScreenTemplate} options={{ headerShown: false }}/>
-            <Stack.Screen name="DriverMenu" component={DriverMenu} options={{ headerShown: false }}/>
-            <Stack.Screen name="AdminMenu" component={AdminMenu} options={{ headerShown: false }}/>
-            <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }}/>
-            <Stack.Screen name="DriverDashboard" component={DriverTabNavigator} options={{ headerShown: false }}/>
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ForgetPass" component={ForgetPassword} options={{ headerShown: false }} />
+            <Stack.Screen name="ScreenTemplate" component={ScreenTemplate} options={{ headerShown: false }} />
+            <Stack.Screen name="DriverMenu" component={DriverMenu} options={{ headerShown: false }} />
+            <Stack.Screen name="AdminMenu" component={AdminMenu} options={{ headerShown: false }} />
+            <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }} />
+            <Stack.Screen name="DriverDashboard" component={DriverTabNavigator} options={{ headerShown: false }} />
           </>
         )}
       </Stack.Navigator>

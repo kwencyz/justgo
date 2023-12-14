@@ -18,6 +18,7 @@ export default function SignupScreen() {
   const role = ["Passenger", "Driver"];
   const [userType, setUserType] = useState('');
   const [regNo, setRegNo] = useState('');
+  const [wallet, setWallet] = useState(0);
   const auth = FIREBASE_AUTH;
   const firestore = FIRESTORE;
 
@@ -35,6 +36,7 @@ export default function SignupScreen() {
         phoneNumber,
         userType,
         email,
+        wallet,
       };
 
       if (userType === "Driver") {
@@ -46,10 +48,12 @@ export default function SignupScreen() {
 
       if (userType === "Passenger") {
         navigation.push('PassengerDashboard');
-      }else if (userType === "Driver"){
+      } else if (userType === "Driver") {
         navigation.push('DriverDashboard');
       }
-      
+
+      console.log('User sign up successfully: ' + auth.currentUser.uid);
+
     } catch (error) {
       console.log(error);
       alert('Sign Up Failed: ' + error.message);
@@ -125,12 +129,12 @@ export default function SignupScreen() {
           </View>
 
           <View style={styles.linkContainer}>
-          <Text>Already have an account?</Text>
-          <TouchableOpacity onPress={() => navigation.push('Login')}>
-            <Text style={styles.linkText}> Login  </Text>
-          </TouchableOpacity>
-          <Text>now!</Text>
-        </View>
+            <Text>Already have an account?</Text>
+            <TouchableOpacity onPress={() => navigation.push('Login')}>
+              <Text style={styles.linkText}> Login  </Text>
+            </TouchableOpacity>
+            <Text>now!</Text>
+          </View>
 
         </ScrollView>
 
