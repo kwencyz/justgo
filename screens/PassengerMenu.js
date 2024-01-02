@@ -37,6 +37,7 @@ export default function PassengerMenu() {
     const [distance, setDistance] = useState(null);
     const [price, setPrice] = useState(null);
     const mapRef = useRef(null);
+    const [paymentError, setPaymentError] = useState(null);
 
     const toast = useToast();
 
@@ -250,9 +251,10 @@ export default function PassengerMenu() {
                     // Show a notification or navigate to a confirmation screen
                     console.log('Order Now pressed');
                     const showToast = () => {
-                        ToastAndroid.show('We will notify you once a driver accepts your order', ToastAndroid.SHORT);
+                        ToastAndroid.show('Payment is completed.We will notify you once a driver accepts your order', ToastAndroid.SHORT);
                     };
                     showToast();
+                    navigation.navigate('PassengerHistoryScreen');
                 } else {
                     // Wallet balance is insufficient, display a toast message
                     const showToast = () => {

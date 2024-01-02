@@ -1,8 +1,45 @@
+import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import { collection, doc, getDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { Image, KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
 export default function WalletScreen() {
+
+  const navigation = useNavigation();
+
+  const [balance, setBalance] = useState(0);
+  const [userData, setUserData] = useState(null);
+  const auth = FIREBASE_AUTH;
+  const firestore = FIRESTORE;
+
+  useEffect(() => {
+    // Function to fetch balance from Firestore
+    const fetchBalance = async () => {
+      try {
+        const userId = auth.currentUser.uid;
+        const userDocRef = doc(collection(firestore, 'passengerdb'), userId);
+        const userDocSnapshot = await getDoc(userDocRef);
+
+        if (userDocSnapshot.exists()) {
+          const userData = userDocSnapshot.data();
+          setBalance(userData.wallet); // Assuming 'wallet' is the field in Firestore
+        } else {
+          console.log('No such document!');
+        }
+      } catch (error) {
+        console.error('Error fetching balance: ', error);
+      }
+    };
+
+    fetchBalance(); // Fetch balance when component mounts
+  }, []);
+
+  const handleTopUpPress = () => {
+    navigation.navigate('TopUpWallet');
+  };
+
   return (
     <KeyboardAvoidingView style={styles.container}>
       <StatusBar backgroundColor="black" style='light' />
@@ -19,12 +56,40 @@ export default function WalletScreen() {
         </View>
       </View>
 
+
       <View style={styles.formContainer}>
         {/* container */}
-        <View>
-          <Text>I am Wallet Screen!!!</Text>
+        <View >
+          <Text style={styles.title}>JustGo Wallet</Text>
         </View>
+
+        <View style={styles.walletContainer}>
+          <View style={styles.walletLogoContainer}>
+            <Image
+              source={require('../assets/images/wallet.png')} // Update the path to your image
+              style={styles.Walletlogo}
+              resizeMode="contain"
+            />
+          </View>
+
+          <View style={styles.balanceContainer}>
+            <Text style={styles.balanceText}>Current Balance:</Text>
+            <Text style={styles.balanceAmount}>RM {balance}</Text>
+          </View>
+
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.TopUpButton}
+            onPress={handleTopUpPress}
+          >
+            <Text style={styles.TopUpButtonText}>Top Up Now</Text>
+          </TouchableOpacity>
+        </View>
+
       </View>
+
     </KeyboardAvoidingView>
   );
 }
@@ -36,12 +101,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     flexDirection: 'row', // Arrange children in a row
     marginTop: 40,
-    borderBottomLeftRadius: 20, // Bottom left corner radius
-    borderBottomRightRadius: 20, // Bottom right corner radius
+    borderBottomLeftRadius: 0, // Bottom left corner radius
+    borderBottomRightRadius: 0, // Bottom right corner radius
   },
   logo: {
     width: 150, // Set the width of your logo
     height: 50, // Set the height of your logo
+  },
+  Walletlogo: {
+    width: 100, // Set the width of your logo
+    height: 100, // Set the height of your logo
   },
   container: {
     flex: 1,
@@ -56,102 +125,69 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginRight: 10,
   },
+  walletLogoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'left',
+    marginLeft: 0,
+  },
   logoImage: {
     width: 300,
     height: 300,
   },
   formContainer: {
-    flex: 1,
+    flex: 1 / 4,
     //justifyContent: 'top',
+    alignItems: 'left',
+    marginTop: 0,
+    backgroundColor: 'maroon',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  walletContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
+    marginLeft: 20,
   },
-  inputContainer: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 20,
-    marginBottom: 20,
-    padding: 10,
-    elevation: 3,
-    shadowColor: 'rgba(0,0,0,0.2)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
+  balanceContainer: {
+    marginRight: 100,
   },
-  input: {
-    color: 'maroon',
-  },
-  buttonContainer: {
-    width: '80%',
-    marginBottom: 20,
-  },
-  button: {
-    width: '100%',
-    backgroundColor: 'red',
-    padding: 10,
-    borderRadius: 20,
-  },
-  buttonText: {
-    textAlign: 'center',
+  balanceText: {
+    marginBottom: 15,
+    marginTop: -5,
     color: 'white',
     fontSize: 18,
+  },
+  balanceAmount: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold'
+  },
+  title: {
+    color: 'white',
+    fontSize: 24,
+    marginLeft: 30,
+    marginVertical: 10,
     fontWeight: 'bold',
   },
-  linkContainer: {
-    flexDirection: 'row',
+  buttonContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginTop: 420, // Adjust this value as needed for spacing
   },
-  linkText: {
-    color: 'white',
-    textDecorationLine: 'underline',
-    marginLeft: 5,
-  },
-  searchContainer: {
-    width: '80%',
-    backgroundColor: 'transparent',
-    borderBottomWidth: 0,
-    borderTopWidth: 0,
-    marginBottom: 20,
-  },
-  searchInputContainer: {
-    backgroundColor: 'white',
+  TopUpButton: {
+    backgroundColor: 'maroon',
+    padding: 5,
     borderRadius: 20,
-    borderBottomWidth: 0, // Remove the default border
+    marginTop: 5,
+    width: 120,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  searchInput: {
-    color: 'maroon',
-  },
-  searchResultsContainer: {
-    marginTop: 10,
-    width: '80%',
-  },
-  searchResultItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'lightgray',
-  },
-  searchResultText: {
+  TopUpButtonText: {
     color: 'white',
-    fontSize: 16,
-  },
-  map: {
-    width: 350,
-    height: 500,
-  },
-  mapContainer: {
-    flex: 1,
-    paddingTop: 70,
-  },
-  errorContainer: {
-    backgroundColor: 'red',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  errorText: {
-    color: 'white',
+    fontSize: 18,
     textAlign: 'center',
   },
 });

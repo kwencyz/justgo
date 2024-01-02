@@ -8,6 +8,9 @@ export default function DriverMenu() {
     const [orders, setOrders] = useState([]);
     const firestore = getFirestore();
 
+    const [filteredOrders, setFilteredOrders] = useState([]);
+    const [selectedStatus, setSelectedStatus] = useState('pending'); //Default to pending
+
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -49,10 +52,27 @@ export default function DriverMenu() {
                 <Text style={styles.orderText}>Pickup Address: {item.origin.name}</Text>
                 <Text style={styles.orderText}>Delivery Address: {item.destination.name}</Text>
                 <Text style={styles.orderText}>Total Price: {item.price}</Text>
+
+                {item.status === 'pending' && (
+                    <TouchableOpacity style={styles.acceptButton} onPress={() => acceptOrder(item)}>
+                        <Text style={styles.acceptButtonText}>Accept Order</Text>
+                    </TouchableOpacity>
+                )}
+
+                {item.status === 'accepted' && (
+                    <TouchableOpacity style={styles.pickupButton} onPress={() => pickupPassenger(item)}>
+                        <Text style={styles.pickupButtonText}>Pickup</Text>
+                    </TouchableOpacity>
+                )}
+
+                {item.status === 'in-progress' && (
+                    <TouchableOpacity style={styles.dropOffButton} onPress={() => dropOffPassenger(item)}>
+                        <Text style={styles.dropOffButtonText}>Drop-off Passenger</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </TouchableOpacity>
     );
-
 
     useEffect(() => {
         // Fetch orders from Firestore
@@ -61,14 +81,19 @@ export default function DriverMenu() {
                 const ordersRef = collection(firestore, 'orderdetailsdb'); // Use collection() function
                 const orderSnapshots = await getDocs(ordersRef); // Use getDocs() function
                 const orderDetailsData = orderSnapshots.docs.map((doc) => doc.data());
+
+                //Filter orders based on status
+                const filteredOrders = orderDetailsData.filter(order => order.status === selectedStatus);
+
                 setOrders(orderDetailsData);
+                setFilteredOrders(filteredOrders);
             } catch (error) {
                 console.error('Error fetching orders:', error);
             }
         };
 
         fetchOrders();
-    }, []);
+    }, [selectedStatus]);
 
     useEffect(() => {
         const intervalId = setInterval(refreshOrders, 5000); // Refresh orders every 5 seconds
@@ -133,7 +158,7 @@ export default function DriverMenu() {
         }
     };
 
-    const acceptOrder = async () => {
+    const acceptOrder = async (selectedOrder) => {
         try {
 
             // Customize your order data
@@ -145,7 +170,15 @@ export default function DriverMenu() {
                 distance: selectedOrder.distance,
                 price: selectedOrder.price,
                 timestamp: serverTimestamp(),
+                status: "accepted",
             };
+
+            /* // Update order status to "accepted" in the orderdetailsdb collection
+            const orderToUpdateRef = doc(firestore, 'orderdetailsdb', selectedOrder.orderId);
+            await setDoc(orderToUpdateRef, {
+                ...selectedOrder,
+                status: "accepted"
+            }) */
 
             // Add data to a new "orders" collection
             const orderDocRef = await addDoc(collection(firestore, 'orderdb'), {
@@ -157,23 +190,72 @@ export default function DriverMenu() {
                 orderId: orderDocRef.id, // Set order ID with the auto-generated ID
             });
 
-            // Show a notification or navigate to a confirmation screen
-            sendNotification(selectedOrder.userId, 'Your order has been accepted!');
+            //Show a notification or navigate to a confirmation screen
+            console.log('Order accepted successfully:', orderDocRef.id);
 
             // Delete or hide the accepted order from the list
             const orderToDeleteRef = doc(firestore, 'orderdetailsdb', selectedOrder.orderId);
             await deleteDoc(orderToDeleteRef);
-            console.log('Order accepted successfully:', orderDocRef.id);
 
+            //Refresh the orders
+            refreshOrders();
+
+            // Show a toast notification
             console.log('Accept Order pressed');
             const showToast = () => {
-                ToastAndroid.show('You have successfully accepts the order', ToastAndroid.SHORT);
+                ToastAndroid.show('You have successfully accepted the order', ToastAndroid.SHORT);
             };
             showToast();
         } catch (error) {
             console.error('Error accepting order:', error.message);
         }
     };
+
+    const pickupPassenger = async (selectedOrder) => {
+        try {
+            const orderToUpdateRef = doc(firestore, 'orderdetailsdb', selectedOrder.orderId);
+            await setDoc(orderToUpdateRef, {
+                ...selectedOrder,
+                status: 'in-progress',
+            });
+
+            // Refresh the orders
+            refreshOrders();
+
+            const showToast = () => {
+                ToastAndroid.show('You have picked up the passenger', ToastAndroid.SHORT);
+            };
+            showToast();
+        } catch (error) {
+            console.error('Error updating order status to in-progress:', error.message);
+        }
+    };
+
+    const dropOffPassenger = async (selectedOrder) => {
+        try {
+            const orderToUpdateRef = doc(firestore, 'orderdetailsdb', selectedOrder.orderId);
+            await setDoc(orderToUpdateRef, {
+                ...selectedOrder,
+                status: 'completed',
+            });
+
+            // Refresh the orders
+            refreshOrders();
+
+            const showToast = () => {
+                ToastAndroid.show('You have dropped off the passenger. Order completed!', ToastAndroid.SHORT);
+            };
+            showToast();
+        } catch (error) {
+            console.error('Error updating order status to completed:', error.message);
+        }
+    };
+
+    const ModalButton = ({ text, onPress }) => (
+        <TouchableOpacity style={styles.ModalButton} onPress={onPress}>
+            <Text style={styles.acceptModalButtonText}>{text}</Text>
+        </TouchableOpacity>
+    );
 
     return (
         <KeyboardAvoidingView style={styles.container}>
@@ -195,6 +277,36 @@ export default function DriverMenu() {
                 <TouchableOpacity style={styles.refreshButton} onPress={refreshOrders}>
                     <Text style={styles.refreshButtonText}>Refresh</Text>
                 </TouchableOpacity>
+                <View style={styles.filterButtonsContainer}>
+                    <TouchableOpacity
+                        style={[styles.filterButton, selectedStatus === 'pending' && styles.selectedFilterButton]}
+                        onPress={() => setSelectedStatus('pending')}
+                    >
+                        <Text>Pending</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.filterButton, selectedStatus === 'accepted' && styles.selectedFilterButton]}
+                        onPress={() => setSelectedStatus('accepted')}
+                    >
+                        <Text>Accepted</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.filterButton, selectedStatus === 'in-progress' && styles.selectedFilterButton]}
+                        onPress={() => setSelectedStatus('in-progress')}
+                    >
+                        <Text>In Progress</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.filterButton, selectedStatus === 'completed' && styles.selectedFilterButton]}
+                        onPress={() => setSelectedStatus('completed')}
+                    >
+                        <Text>Completed</Text>
+                    </TouchableOpacity>
+                </View>
+
                 {/* Display orders in a FlatList */}
                 <FlatList
                     data={orders}
@@ -220,19 +332,22 @@ export default function DriverMenu() {
                                 <Text style={styles.orderText}>Distance: {selectedOrder.distance}</Text>
                                 <Text style={styles.orderText}>Total Price: {selectedOrder.price}</Text>
 
-                                <TouchableOpacity
-                                    style={styles.ModalButton}
-                                    onPress={() => setModalVisible(false)}
-                                >
-                                    <TouchableOpacity
-                                        style={styles.acceptModalButtonText}
-                                        onPress={acceptOrder}>
-                                        <Text>Accept Order</Text>
-                                    </TouchableOpacity>
+                                {selectedOrder.status === 'pending' && (
+                                    <ModalButton text="Accept Order" onPress={() => acceptOrder(selectedOrder)} />
+                                )}
 
-                                </TouchableOpacity>
+                                {selectedOrder.status === 'accepted' && (
+                                    <ModalButton text="Pickup" onPress={() => pickupPassenger(selectedOrder)} />
+                                )}
+
+                                {selectedOrder.status === 'in-progress' && (
+                                    <ModalButton text="Drop-off Passenger" onPress={() => dropOffPassenger(selectedOrder)} />
+                                )}
+
+                                <ModalButton text="Close" onPress={() => setModalVisible(false)} />
                             </View>
                         )}
+
                     </View>
                 </Modal>
 
@@ -418,4 +533,17 @@ const styles = StyleSheet.create({
         fontSize: 18,
         textAlign: 'center',
     },
+    filterButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 10,
+    },
+    filterButton: {
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: 'lightgray',
+    },
+    selectedFilterButton: {
+        backgroundColor: 'gray',
+    },
 });

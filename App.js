@@ -16,6 +16,7 @@ import PassengerHistoryScreen from './screens/PassengerHistoryScreen';
 import PassengerMenu from './screens/PassengerMenu';
 import ScreenTemplate from './screens/ScreenTemplate';
 import SignupScreen from './screens/SignupScreen';
+import TopUpWallet from './screens/TopupWallet';
 import WalletScreen from './screens/WalletScreen';
 
 Geocoder.init('AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0');
@@ -190,6 +191,9 @@ function App() {
             <Stack.Screen name="AdminMenu" component={AdminMenu} options={{ headerShown: false }} />
             <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }} />
             <Stack.Screen name="DriverDashboard" component={DriverTabNavigator} options={{ headerShown: false }} />
+            <Stack.Screen name="WalletScreen" component={WalletScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="TopUpWallet" component={TopUpWallet} options={{ headerShown: false }} />
+            <Stack.Screen name="PassengerHistoryScreen" component={PassengerHistoryScreen} options={{ headerShown: false }} />
           </>
         )}
       </Stack.Navigator>

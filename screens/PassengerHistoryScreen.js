@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { default as React, useEffect, useState } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import CustomRatingBar from './CustomRatingBar'; //saje nak try rating jadi dalam bentuk star
 
 export default function PassengerHistoryScreen() {
@@ -33,6 +33,16 @@ export default function PassengerHistoryScreen() {
         price: 'RM 6',
         status: 'Completed',
         rating: 3,
+      },
+      {
+        id: '3',
+        date: '2023-12-15',
+        time: '09:40 AM',
+        startDestination: 'Perpustakaan Tun Seri Lanang, UKM',
+        endDestination: 'Stesen Komuter UKM, Bangi',
+        price: 'RM 6',
+        status: 'Pending',
+        rating: 0,
       },
       // add more job history if needed
     ];
@@ -73,8 +83,11 @@ export default function PassengerHistoryScreen() {
       <StatusBar backgroundColor="black" style='light' />
       <Image style={styles.backgroundImage} source={require('../assets/images/background.png')} />
 
-      {/* logo */}
+      {/* logo and back button */}
       <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.navigate('PassengerDashboard')} style={styles.backButton}>
+          <Text style={styles.backButtonText}>Back</Text>
+        </TouchableOpacity>
         <View style={styles.logoContainer}>
           <Image
             source={require('../assets/images/justgoHeader.png')} // Update the path to your image
@@ -223,5 +236,15 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'white',
     textAlign: 'center',
+  },
+  backButton: {
+    marginLeft: 5,
+    marginTop: 8,
+    padding: 1,
+  },
+  backButtonText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
 });
