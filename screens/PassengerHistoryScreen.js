@@ -1,76 +1,60 @@
 import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { collection, getDocs, getFirestore } from 'firebase/firestore';
 import { default as React, useEffect, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import { FIREBASE_AUTH } from '../FirebaseConfig';
 
 export default function PassengerHistoryScreen() {
 
-  const [jobHistory, setJobHistory] = useState([]);
+  const [orderHistory, setOrderHistory] = useState([]);
   const navigation = useNavigation();
   const [pendingOrders, setPendingOrders] = useState([]);
   const [completedOrders, setCompletedOrders] = useState([]);
 
+  const auth = FIREBASE_AUTH;
+  const firestore = getFirestore();
+
   useEffect(() => {
+    const fetchOrderHistory = async () => {
+      try {
+        // Assuming you have stored the user ID in auth.currentUser.uid
+        const userId = auth.currentUser.uid;
 
-    const filteredPending = jobHistory.filter((order) => order.status === 'Pending');
-    const filteredCompleted = jobHistory.filter((order) => order.status === 'Completed');
-    const dummyJobHistory = [
-      {
-        id: '1',
-        date: '2023-12-10',
-        time: '10:30 AM',
-        startDestination: 'KTM, UKM',
-        endDestination: 'Kolej Pendeta Zaaba, UKM',
-        price: 'RM 10',
-        status: 'Completed',
-        rating: 4,
-      },
-      {
-        id: '2',
-        date: '2023-12-08',
-        time: '09:00 AM',
-        startDestination: 'Pusanika, UKM',
-        endDestination: 'Kolej Keris Mas, UKM',
-        price: 'RM 6',
-        status: 'Completed',
-        rating: 3,
-      },
-      {
-        id: '3',
-        date: '2023-12-15',
-        time: '09:40 AM',
-        startDestination: 'Perpustakaan Tun Seri Lanang, UKM',
-        endDestination: 'Stesen Komuter UKM, Bangi',
-        price: 'RM 6',
-        status: 'Pending',
-        rating: 0,
-      },
-      // add more job history if needed
-    ];
+        // Fetch order history data from Firestore
+        const orderHistoryRef = collection(firestore, 'orderdetailsdb');
+        const orderHistorySnapshots = await getDocs(orderHistoryRef);
+        const orderHistoryData = orderHistorySnapshots.docs.map((doc) => doc.data());
 
-    //can fetch job history data from an API
-    setJobHistory(dummyJobHistory);
-    setPendingOrders(filteredPending);
-    setCompletedOrders(filteredCompleted);
-  }, []);
+        // Filter orders based on passengerId
+        const filteredPending = orderHistoryData.filter((order) => order.status === 'pending' && order.passengerId === userId);
+        const filteredCompleted = orderHistoryData.filter((order) => order.status === 'completed' && order.passengerId === userId);
 
-  const handleRatingSelection = (itemId, selectedRating) => {
-    // to manage the rating selected in the data.
-    console.log('Job ID: ${ itemId }', 'Selected Rating: ${ selectedRating }');
-  };
+        // Set the order history and orders in state
+        setOrderHistory(orderHistoryData);
+        setPendingOrders(filteredPending);
+        setCompletedOrders(filteredCompleted);
+      } catch (error) {
+        console.error('Error fetching order history:', error);
+      }
+    };
+
+    fetchOrderHistory();
+  }, [auth.currentUser.uid, firestore]);
 
   const renderOrderItem = ({ item }) => {
+    // Assuming 'timestamp' is the field containing the Firestore Timestamp
+    const orderTimestamp = item.timestamp.toDate();
+
     return (
       <View style={styles.orderItem}>
-        <Text style={styles.orderText}>{item.date} at {item.time}</Text>
-        {/* Render other order details here */}
-        <Text style={styles.destination}>{item.startDestination}</Text>
-        <Text style={styles.destination}>{item.endDestination}</Text>
-        <Text style={styles.price}>{item.price}</Text>
-        {/*         <CustomRatingBar
-          rating={item.rating}
-          onRatingPress={(selectedRating) => handleRatingSelection(item.id, selectedRating)}
-        /> */}
+        <Text style={styles.orderText}>Pickup Address: {item.origin.name}</Text>
+        <Text style={styles.orderText}>Delivery Address: {item.destination.name}</Text>
+        <Text style={styles.orderText}>Total Price: RM{item.price}</Text>
+
+        <Text style={styles.orderText}>Date: {orderTimestamp.toLocaleDateString()}</Text>
+        <Text style={styles.orderText}>Time: {orderTimestamp.toLocaleTimeString()}</Text>
+
       </View>
     );
   };
@@ -98,7 +82,7 @@ export default function PassengerHistoryScreen() {
           <FlatList
             data={pendingOrders}
             renderItem={renderOrderItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => `pending-${item.id}`}
           />
         </View>
 
@@ -107,7 +91,7 @@ export default function PassengerHistoryScreen() {
           <FlatList
             data={completedOrders}
             renderItem={renderOrderItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => `completed-${item.id}`}
           />
         </View>
       </View>
@@ -172,6 +156,11 @@ const styles = StyleSheet.create({
   },
   orderText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    // /fontWeight: 'bold',
+  },
+  flatListContainer: {
+    flex: 1,
+    marginTop: 10,
+    width: '90%',
   },
 });
