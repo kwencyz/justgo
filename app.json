@@ -8,7 +8,8 @@
       }
     },
     "android": {
-      "package": "com.kwencyz.loginui"
+      "package": "com.kwencyz.loginui",
+      "googleServicesFile": "./google-services.json"
     }
   }
 }

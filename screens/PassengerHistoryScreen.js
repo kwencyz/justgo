@@ -1,18 +1,19 @@
 import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { default as React, useEffect, useState } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import CustomRatingBar from './CustomRatingBar'; //saje nak try rating jadi dalam bentuk star
+import { FlatList, Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
 
 export default function PassengerHistoryScreen() {
 
   const [jobHistory, setJobHistory] = useState([]);
   const navigation = useNavigation();
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [completedOrders, setCompletedOrders] = useState([]);
 
   useEffect(() => {
-    // This is just dummy data for job history of the driver
-    //structure data ade id,date,time,start & end destination.price,status and rating
-    //This is where to implement the function to fetch the driver's job history from Firebase Firestore
+
+    const filteredPending = jobHistory.filter((order) => order.status === 'Pending');
+    const filteredCompleted = jobHistory.filter((order) => order.status === 'Completed');
     const dummyJobHistory = [
       {
         id: '1',
@@ -49,33 +50,29 @@ export default function PassengerHistoryScreen() {
 
     //can fetch job history data from an API
     setJobHistory(dummyJobHistory);
+    setPendingOrders(filteredPending);
+    setCompletedOrders(filteredCompleted);
   }, []);
 
   const handleRatingSelection = (itemId, selectedRating) => {
     // to manage the rating selected in the data.
-    //console.log(Job ID: ${ itemId }, Selected Rating: ${ selectedRating });
+    console.log('Job ID: ${ itemId }', 'Selected Rating: ${ selectedRating }');
   };
 
-  //kat bawah ni ade line untuk include custom rating bar star dalam list data utk display
-  const renderJobItem = ({ item }) => (
-    <View style={styles.jobItem}>
-      <View style={styles.jobHeader}>
-        <View>
-          <Text style={styles.date}>{item.date} at {item.time}</Text>
-        </View>
-        <View>
-          <Text style={styles.status}>{item.status}</Text>
-        </View>
+  const renderOrderItem = ({ item }) => {
+    return (
+      <View style={styles.orderItem}>
+        <Text style={styles.orderText}>{item.date} at {item.time}</Text>
+        {/* Render other order details here */}
+        <Text style={styles.destination}>{item.startDestination}</Text>
+        <Text style={styles.destination}>{item.endDestination}</Text>
+        <Text style={styles.price}>{item.price}</Text>
+        {/*         <CustomRatingBar
+          rating={item.rating}
+          onRatingPress={(selectedRating) => handleRatingSelection(item.id, selectedRating)}
+        /> */}
       </View>
-      <Text style={styles.destination}>{item.startDestination}</Text>
-      <Text style={styles.destination}>{item.endDestination}</Text>
-      <Text style={styles.price}>{item.price}</Text>
-      <CustomRatingBar rating={item.rating} onRatingPress={(selectedRating) => handleRatingSelection(item.id, selectedRating)} />
-    </View>
-  );
-
-  const navigateToSearchBar = () => {
-    navigation.navigate('SearchBar'); // This line is to navigate this page to suitable page (main menu.js rasanya) such as in this, SearchBar page when user push the back button
+    );
   };
 
   return (
@@ -85,9 +82,6 @@ export default function PassengerHistoryScreen() {
 
       {/* logo and back button */}
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('PassengerDashboard')} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
         <View style={styles.logoContainer}>
           <Image
             source={require('../assets/images/justgoHeader.png')} // Update the path to your image
@@ -99,12 +93,21 @@ export default function PassengerHistoryScreen() {
 
       <View style={styles.formContainer}>
         {/* container */}
-        <View>
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Pending Orders</Text>
           <FlatList
-            data={jobHistory}
-            renderItem={renderJobItem}
+            data={pendingOrders}
+            renderItem={renderOrderItem}
             keyExtractor={(item) => item.id}
-            style={styles.list}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Completed Orders</Text>
+          <FlatList
+            data={completedOrders}
+            renderItem={renderOrderItem}
+            keyExtractor={(item) => item.id}
           />
         </View>
       </View>
@@ -114,17 +117,17 @@ export default function PassengerHistoryScreen() {
 
 const styles = StyleSheet.create({
   headerContainer: {
-    backgroundColor: 'maroon', // Set the background color of the header
+    backgroundColor: 'maroon',
     padding: 5,
     justifyContent: 'space-between',
-    flexDirection: 'row', // Arrange children in a row
+    flexDirection: 'row',
     marginTop: 40,
-    borderBottomLeftRadius: 20, // Bottom left corner radius
-    borderBottomRightRadius: 20, // Bottom right corner radius
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   logo: {
-    width: 150, // Set the width of your logo
-    height: 50, // Set the height of your logo
+    width: 150,
+    height: 50,
   },
   container: {
     flex: 1,
@@ -139,112 +142,36 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginRight: 10,
   },
-  logoImage: {
-    width: 300,
-    height: 300,
-  },
   formContainer: {
     flex: 1,
-    //justifyContent: 'top',
-    alignItems: 'center',
     marginTop: 20,
+    marginHorizontal: 10,
   },
-  inputContainer: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 20,
-    marginBottom: 20,
-    padding: 10,
-    elevation: 3,
-    shadowColor: 'rgba(0,0,0,0.2)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-  },
-  input: {
-    color: 'maroon',
-  },
-  buttonContainer: {
-    width: '80%',
+  section: {
     marginBottom: 20,
   },
-  button: {
-    width: '100%',
-    backgroundColor: 'red',
-    padding: 10,
-    borderRadius: 20,
-  },
-  buttonText: {
-    textAlign: 'center',
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  linkContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+  sectionHeader: {
+    fontSize: 24,
+    fontWeight: '300',
     marginBottom: 10,
-  },
-  linkText: {
     color: 'white',
-    textDecorationLine: 'underline',
-    marginLeft: 5,
   },
-  searchContainer: {
-    width: '80%',
-    backgroundColor: 'transparent',
-    borderBottomWidth: 0,
-    borderTopWidth: 0,
-    marginBottom: 20,
-  },
-  searchInputContainer: {
+  orderItem: {
+    padding: 10,
     backgroundColor: 'white',
-    borderRadius: 20,
-    borderBottomWidth: 0, // Remove the default border
+    marginBottom: 10,
+    borderRadius: 10,
   },
-  searchInput: {
-    color: 'maroon',
-  },
-  searchResultsContainer: {
-    marginTop: 10,
-    width: '80%',
-  },
-  searchResultItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'lightgray',
-  },
-  searchResultText: {
-    color: 'white',
+  destination: {
+    // Styles for destination text
     fontSize: 16,
   },
-  map: {
-    width: 350,
-    height: 500,
+  price: {
+    // Styles for price text
+    fontSize: 16,
   },
-  mapContainer: {
-    flex: 1,
-    paddingTop: 70,
-  },
-  errorContainer: {
-    backgroundColor: 'red',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  errorText: {
-    color: 'white',
-    textAlign: 'center',
-  },
-  backButton: {
-    marginLeft: 5,
-    marginTop: 8,
-    padding: 1,
-  },
-  backButtonText: {
-    color: 'white',
-    fontSize: 20,
+  orderText: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

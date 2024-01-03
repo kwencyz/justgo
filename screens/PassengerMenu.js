@@ -224,9 +224,10 @@ export default function PassengerMenu() {
                     const orderData = {
                         origin: origin,
                         destination: destination,
-                        userId: auth.currentUser.uid,
+                        passengerId: auth.currentUser.uid,
                         distance: distance,
                         price: price,
+                        status: 'pending',
                         timestamp: serverTimestamp(), // Firestore server timestamp
                     };
 

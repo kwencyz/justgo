@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, getFirestore, setDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Modal, StatusBar, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH } from '../FirebaseConfig';
@@ -51,7 +51,7 @@ export default function DriverMenu() {
             <View style={styles.orderItem}>
                 <Text style={styles.orderText}>Pickup Address: {item.origin.name}</Text>
                 <Text style={styles.orderText}>Delivery Address: {item.destination.name}</Text>
-                <Text style={styles.orderText}>Total Price: {item.price}</Text>
+                <Text style={styles.orderText}>Total Price: RM{item.price}</Text>
 
                 {item.status === 'pending' && (
                     <TouchableOpacity style={styles.acceptButton} onPress={() => acceptOrder(item)}>
@@ -79,11 +79,21 @@ export default function DriverMenu() {
         const fetchOrders = async () => {
             try {
                 const ordersRef = collection(firestore, 'orderdetailsdb'); // Use collection() function
-                const orderSnapshots = await getDocs(ordersRef); // Use getDocs() function
+                const orderSnapshots = await getDocs(ordersRef);
                 const orderDetailsData = orderSnapshots.docs.map((doc) => doc.data());
 
-                //Filter orders based on status
-                const filteredOrders = orderDetailsData.filter(order => order.status === selectedStatus);
+                /*                 //Filter orders based on status
+                                const filteredOrders = orderDetailsData.filter(order => order.status === selectedStatus); */
+
+                // Filter orders based on status and current user's ID
+                const filteredOrders = orderDetailsData.filter(order => {
+                    if ((selectedStatus === 'pending' && order.status === 'pending') ||
+                        (order.status === selectedStatus && order.driverId === auth.currentUser.uid)
+                    ) {
+                        return true;
+                    }
+                    return false;
+                });
 
                 setOrders(orderDetailsData);
                 setFilteredOrders(filteredOrders);
@@ -93,7 +103,7 @@ export default function DriverMenu() {
         };
 
         fetchOrders();
-    }, [selectedStatus]);
+    }, [auth.currentUser.uid, firestore, selectedStatus]);
 
     useEffect(() => {
         const intervalId = setInterval(refreshOrders, 5000); // Refresh orders every 5 seconds
@@ -103,7 +113,7 @@ export default function DriverMenu() {
     const refreshOrders = async () => {
         try {
             const ordersRef = collection(firestore, 'orderdetailsdb');
-            const orderSnapshots = await getDocs(ordersRef);
+            const orderSnapshots = await getDocs(ordersRef)
             const orderDetailsData = orderSnapshots.docs.map((doc) => doc.data());
             setOrders(orderDetailsData);
         } catch (error) {
@@ -111,93 +121,23 @@ export default function DriverMenu() {
         }
     };
 
-    // Function to send a notification using FCM
-    const sendNotification = async (userId, message) => {
-        try {
-            // Get the FCM token for the user with the specified userId
-            const userDoc = await getDoc(doc(firestore, 'passengerdb', userId));
-            const fcmToken = userDoc.data().fcmToken;
-
-            if (!fcmToken) {
-                console.error('User does not have an FCM token');
-                return;
-            }
-
-            // Send the notification using FCM
-            const payload = {
-                data: {
-                    title: 'Order Accepted',
-                    body: message,
-                },
-                token: fcmToken,
-            };
-
-            await sendToDevice(payload);
-
-            console.log('Notification sent successfully');
-        } catch (error) {
-            console.error('Error sending notification:', error.message);
-        }
-    };
-
-
-    const getPassengerFCMToken = async (passengerId) => {
-        try {
-            const passengerDocRef = doc(firestore, 'passengerdb', passengerId);
-            const passengerDocSnap = await getDoc(passengerDocRef);
-
-            if (passengerDocSnap.exists()) {
-                return passengerDocSnap.data().fcmToken;
-            } else {
-                console.error('Passenger document not found');
-                return null;
-            }
-        } catch (error) {
-            console.error('Error fetching passenger FCM token:', error.message);
-            return null;
-        }
-    };
-
     const acceptOrder = async (selectedOrder) => {
         try {
+            const orderRef = doc(firestore, 'orderdetailsdb', selectedOrder.orderId);
 
-            // Customize your order data
+            // Update order data
             const orderData = {
-                origin: selectedOrder.origin,
-                destination: selectedOrder.destination,
                 driverId: auth.currentUser.uid,
-                passengerId: selectedOrder.userId,
-                distance: selectedOrder.distance,
-                price: selectedOrder.price,
-                timestamp: serverTimestamp(),
-                status: "accepted",
+                status: 'accepted',
             };
 
-            /* // Update order status to "accepted" in the orderdetailsdb collection
-            const orderToUpdateRef = doc(firestore, 'orderdetailsdb', selectedOrder.orderId);
-            await setDoc(orderToUpdateRef, {
-                ...selectedOrder,
-                status: "accepted"
-            }) */
+            // Update the order document in the 'orderdetailsdb' collection
+            await updateDoc(orderRef, orderData);
 
-            // Add data to a new "orders" collection
-            const orderDocRef = await addDoc(collection(firestore, 'orderdb'), {
-                ...orderData,
-            });
+            // Show a notification or navigate to a confirmation screen
+            console.log('Order accepted successfully:', selectedOrder.orderId);
 
-            await setDoc(orderDocRef, {
-                ...orderData,
-                orderId: orderDocRef.id, // Set order ID with the auto-generated ID
-            });
-
-            //Show a notification or navigate to a confirmation screen
-            console.log('Order accepted successfully:', orderDocRef.id);
-
-            // Delete or hide the accepted order from the list
-            const orderToDeleteRef = doc(firestore, 'orderdetailsdb', selectedOrder.orderId);
-            await deleteDoc(orderToDeleteRef);
-
-            //Refresh the orders
+            // Refresh the orders if needed
             refreshOrders();
 
             // Show a toast notification
@@ -309,7 +249,8 @@ export default function DriverMenu() {
 
                 {/* Display orders in a FlatList */}
                 <FlatList
-                    data={orders}
+                    style={styles.flatListContainer}
+                    data={filteredOrders}
                     keyExtractor={(item, index) => `order-${index}`}
                     renderItem={renderItem}
                 />
@@ -330,10 +271,10 @@ export default function DriverMenu() {
                                 <Text style={styles.orderText}>Pickup Address: {selectedOrder.origin.name}</Text>
                                 <Text style={styles.orderText}>Delivery Address: {selectedOrder.destination.name}</Text>
                                 <Text style={styles.orderText}>Distance: {selectedOrder.distance}</Text>
-                                <Text style={styles.orderText}>Total Price: {selectedOrder.price}</Text>
+                                <Text style={styles.orderText}>Total Price: RM{selectedOrder.price}</Text>
 
                                 {selectedOrder.status === 'pending' && (
-                                    <ModalButton text="Accept Order" onPress={() => acceptOrder(selectedOrder)} />
+                                    <ModalButton text="Accept Order" onPress={() => acceptOrder(selectedOrder, setModalVisible(false))} />
                                 )}
 
                                 {selectedOrder.status === 'accepted' && (
@@ -498,7 +439,6 @@ const styles = StyleSheet.create({
         padding: 20,
         borderRadius: 0,
         width: '80%',
-        alignItems: 'center',
     },
     ModalButton: {
         marginTop: 20,
@@ -545,5 +485,10 @@ const styles = StyleSheet.create({
     },
     selectedFilterButton: {
         backgroundColor: 'gray',
-    },
+    },
+    flatListContainer: {
+        flex: 1,
+        marginTop: 10,
+        width: '90%',
+    },
 });
