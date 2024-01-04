@@ -5,10 +5,9 @@ import React, { useEffect, useState } from 'react';
 import { Image, KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
-export default function WalletScreen() {
+export default function PassengerWallet() {
 
   const navigation = useNavigation();
-
   const [balance, setBalance] = useState(0);
   const [userData, setUserData] = useState(null);
   const auth = FIREBASE_AUTH;
@@ -33,9 +32,18 @@ export default function WalletScreen() {
       }
     };
 
-    fetchBalance(); // Fetch balance when component mounts
-  }, []);
+    const refreshBalance = () => {
+      fetchBalance(); // Fetch balance initially
 
+      const intervalId = setInterval(fetchBalance, 2000);
+
+      return () => clearInterval(intervalId); // Clean up interval on unmount
+    };
+
+    refreshBalance(); // Call the refresh function when component mounts
+
+    return () => { }; // No cleanup required for this effect
+  }, []);
   const handleTopUpPress = () => {
     navigation.navigate('TopUpWallet');
   };

@@ -10,14 +10,15 @@ import Geocoder from 'react-native-geocoding';
 import AdminMenu from './screens/AdminMenu';
 import DriverHistoryScreen from './screens/DriverHistoryScreen';
 import DriverMenu from './screens/DriverMenu';
+import DriverWallet from './screens/DriverWallet';
 import ForgetPassword from './screens/ForgetPassword';
 import LoginScreen from './screens/LoginScreen';
 import PassengerHistoryScreen from './screens/PassengerHistoryScreen';
 import PassengerMenu from './screens/PassengerMenu';
+import PassengerWallet from './screens/PassengerWallet';
 import ScreenTemplate from './screens/ScreenTemplate';
 import SignupScreen from './screens/SignupScreen';
 import TopUpWallet from './screens/TopupWallet';
-import WalletScreen from './screens/WalletScreen';
 
 Geocoder.init('AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0');
 
@@ -59,7 +60,7 @@ function PassengerTabNavigator() {
       }}
       />
 
-      <Tab.Screen name="Wallet" component={WalletScreen} options={{
+      <Tab.Screen name="Wallet" component={PassengerWallet} options={{
         tabBarIcon: ({ focused }) => (
           <View style={{ alignItems: 'center', justifyContent: 'center', }}>
             <Image
@@ -133,7 +134,7 @@ function DriverTabNavigator() {
       }}
       />
 
-      <Tab.Screen name="Wallet" component={WalletScreen} options={{
+      <Tab.Screen name="Wallet" component={DriverWallet} options={{
         tabBarIcon: ({ focused }) => (
           <View style={{ alignItems: 'center', justifyContent: 'center', }}>
             <Image
@@ -191,7 +192,8 @@ function App() {
             <Stack.Screen name="AdminMenu" component={AdminMenu} options={{ headerShown: false }} />
             <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }} />
             <Stack.Screen name="DriverDashboard" component={DriverTabNavigator} options={{ headerShown: false }} />
-            <Stack.Screen name="WalletScreen" component={WalletScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="PassengerWallet" component={PassengerWallet} options={{ headerShown: false }} />
+            <Stack.Screen name="DriverWallet" component={DriverWallet} options={{ headerShown: false }} />
             <Stack.Screen name="TopUpWallet" component={TopUpWallet} options={{ headerShown: false }} />
             <Stack.Screen name="PassengerHistoryScreen" component={PassengerHistoryScreen} options={{ headerShown: false }} />
           </>

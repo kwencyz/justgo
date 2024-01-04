@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { collection, getDocs, getFirestore } from 'firebase/firestore';
 import { default as React, useEffect, useState } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { FIREBASE_AUTH } from '../FirebaseConfig';
 
 export default function PassengerHistoryScreen() {
@@ -10,7 +10,9 @@ export default function PassengerHistoryScreen() {
   const [orderHistory, setOrderHistory] = useState([]);
   const navigation = useNavigation();
   const [pendingOrders, setPendingOrders] = useState([]);
+  const [inProgressOrders, setInProgressOrders] = useState([]);
   const [completedOrders, setCompletedOrders] = useState([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const auth = FIREBASE_AUTH;
   const firestore = getFirestore();
@@ -28,11 +30,16 @@ export default function PassengerHistoryScreen() {
 
         // Filter orders based on passengerId
         const filteredPending = orderHistoryData.filter((order) => order.status === 'pending' && order.passengerId === userId);
+        const filteredInProgress = orderHistoryData.filter((order) =>
+          (order.status === 'accepted' && order.passengerId === userId) ||
+          (order.status === 'in-progress' && order.passengerId === userId)
+        );
         const filteredCompleted = orderHistoryData.filter((order) => order.status === 'completed' && order.passengerId === userId);
 
         // Set the order history and orders in state
         setOrderHistory(orderHistoryData);
         setPendingOrders(filteredPending);
+        setInProgressOrders(filteredInProgress);
         setCompletedOrders(filteredCompleted);
       } catch (error) {
         console.error('Error fetching order history:', error);
@@ -47,7 +54,7 @@ export default function PassengerHistoryScreen() {
     const orderTimestamp = item.timestamp.toDate();
 
     return (
-      <View style={styles.orderItem}>
+      <View style={styles.orderItem} key={item.id}>
         <Text style={styles.orderText}>Pickup Address: {item.origin.name}</Text>
         <Text style={styles.orderText}>Delivery Address: {item.destination.name}</Text>
         <Text style={styles.orderText}>Total Price: RM{item.price}</Text>
@@ -57,6 +64,16 @@ export default function PassengerHistoryScreen() {
 
       </View>
     );
+  };
+
+  const handleRefresh = () => {
+    // Set refreshing state to true to indicate the start of refresh
+    setIsRefreshing(true);
+
+    setTimeout(() => {
+
+      setIsRefreshing(false);
+    }, 2000); // Simulated delay of 2 seconds (replace this with actual data fetching logic)
   };
 
   return (
@@ -75,26 +92,39 @@ export default function PassengerHistoryScreen() {
         </View>
       </View>
 
-      <View style={styles.formContainer}>
-        {/* container */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Pending Orders</Text>
-          <FlatList
-            data={pendingOrders}
-            renderItem={renderOrderItem}
-            keyExtractor={(item) => `pending-${item.id}`}
+      <FlatList
+        data={[
+          { title: 'Pending Orders', data: pendingOrders },
+          { title: 'Orders In-Progress', data: inProgressOrders },
+          { title: 'Completed Orders', data: completedOrders },
+        ]}
+        renderItem={({ item }) => (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>{item.title}</Text>
+            </View>
+            <FlatList
+              style={styles.flatListContainer}
+              data={item.data}
+              renderItem={renderOrderItem}
+              keyExtractor={(order) => order.id}
+            />
+          </>
+        )}
+        keyExtractor={(item) => item.title}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={['red', 'maroon']}
+            progressBackgroundColor="white"
+            tintColor="maroon"
+            size="large"
+            title="Refreshing"
+            titleColor="black"
           />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Completed Orders</Text>
-          <FlatList
-            data={completedOrders}
-            renderItem={renderOrderItem}
-            keyExtractor={(item) => `completed-${item.id}`}
-          />
-        </View>
-      </View>
+        }
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -159,8 +189,8 @@ const styles = StyleSheet.create({
     // /fontWeight: 'bold',
   },
   flatListContainer: {
-    flex: 1,
-    marginTop: 10,
     width: '90%',
+    marginLeft: 20,
+    marginTop: -10,
   },
 });
