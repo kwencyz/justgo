@@ -19,6 +19,7 @@ import PassengerWallet from './screens/PassengerWallet';
 import ScreenTemplate from './screens/ScreenTemplate';
 import SignupScreen from './screens/SignupScreen';
 import TopUpWallet from './screens/TopupWallet';
+import WithdrawWallet from './screens/WithdrawWallet';
 
 Geocoder.init('AIzaSyCeZnCGy1kggLJnYpVBjrms39JD9SBjlQ0');
 
@@ -195,6 +196,7 @@ function App() {
             <Stack.Screen name="PassengerWallet" component={PassengerWallet} options={{ headerShown: false }} />
             <Stack.Screen name="DriverWallet" component={DriverWallet} options={{ headerShown: false }} />
             <Stack.Screen name="TopUpWallet" component={TopUpWallet} options={{ headerShown: false }} />
+            <Stack.Screen name="WithdrawWallet" component={WithdrawWallet} options={{ headerShown: false }} />
             <Stack.Screen name="PassengerHistoryScreen" component={PassengerHistoryScreen} options={{ headerShown: false }} />
           </>
         )}

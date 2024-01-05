@@ -18,7 +18,7 @@ export default function DriverWallet() {
         const fetchBalance = async () => {
             try {
                 const userId = auth.currentUser.uid;
-                const userDocRef = doc(collection(firestore, 'passengerdb'), userId);
+                const userDocRef = doc(collection(firestore, 'driverdb'), userId);
                 const userDocSnapshot = await getDoc(userDocRef);
 
                 if (userDocSnapshot.exists()) {
@@ -45,7 +45,7 @@ export default function DriverWallet() {
         return () => { }; // No cleanup required for this effect
     }, []);
     const handleTopUpPress = () => {
-        navigation.navigate('TopUpWallet');
+        navigation.navigate('WithdrawWallet');
     };
 
     return (
@@ -92,7 +92,7 @@ export default function DriverWallet() {
                         style={styles.TopUpButton}
                         onPress={handleTopUpPress}
                     >
-                        <Text style={styles.TopUpButtonText}>Top Up Now</Text>
+                        <Text style={styles.TopUpButtonText}>Withdraw Wallet</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -187,8 +187,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'maroon',
         padding: 5,
         borderRadius: 20,
-        marginTop: 5,
-        width: 120,
+        marginTop: 150,
+        width: '80%',
         height: 50,
         justifyContent: 'center',
         alignItems: 'center',
