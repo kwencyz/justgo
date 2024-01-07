@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
 export default function TopUpWallet() {
@@ -39,7 +39,6 @@ export default function TopUpWallet() {
     }, []);
 
     const handleTopUpPress = async () => {
-        Linking.openURL('https://www.maybank2u.com.my/home/m2u/common/login.do'); // Replace 'touchngo://' with the correct scheme if available
 
         try {
             const amount = parseFloat(topUpAmount);
@@ -56,14 +55,19 @@ export default function TopUpWallet() {
                     await setDoc(userDocRef, { wallet: updatedBalance }, { merge: true });
 
                     console.log('Wallet updated successfully!');
+                    Linking.openURL('https://www.maybank2u.com.my/home/m2u/common/login.do'); // Replace 'touchngo://' with the correct scheme if available
+
                 } else {
                     console.log('No user logged in.');
+                    Alert.alert('Error updating wallet:', error);
                 }
             } else {
                 console.log('Invalid amount.');
+                Alert.alert('Please insert a valid amount.');
             }
         } catch (error) {
             console.error('Error updating wallet:', error);
+            Alert.alert('Error updating wallet:', error);
         }
     };
 
@@ -95,21 +99,70 @@ export default function TopUpWallet() {
                     </View>
 
                     <View>
-                        <Text style={styles.amountText}>Top Up Amount</Text>
+                        <Text style={styles.amountText}>Top Up Amount RM</Text>
                     </View>
 
                     <View style={styles.inputContainer}>
                         <TextInput style={styles.input} placeholderTextColor={'maroon'} keyboardType='numeric' value={topUpAmount} onChangeText={setTopUpAmount} />
                     </View>
 
+                    <View style={styles.topupContainer}>
+                        <View style={styles.row}>
+                            <TouchableOpacity
+                                style={styles.TopUpButton}
+                                onPress={() => setTopUpAmount('5')}>
+                                <Text style={styles.TopUpButtonText}>RM 5</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.TopUpButton}
+                                onPress={() => setTopUpAmount('10')}>
+                                <Text style={styles.TopUpButtonText}>RM 10</Text>
+                            </TouchableOpacity>
+
+                        </View>
+
+                        <View style={styles.row}>
+                            <TouchableOpacity
+                                style={styles.TopUpButton}
+                                onPress={() => setTopUpAmount('15')}>
+                                <Text style={styles.TopUpButtonText}>RM 15</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.TopUpButton}
+                                onPress={() => setTopUpAmount('20')}>
+                                <Text style={styles.TopUpButtonText}>RM 20</Text>
+                            </TouchableOpacity>
+
+
+                        </View>
+
+                        <View style={styles.row}>
+                            <TouchableOpacity
+                                style={styles.TopUpButton}
+                                onPress={() => setTopUpAmount('25')}>
+                                <Text style={styles.TopUpButtonText}>RM 25</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.TopUpButton}
+                                onPress={() => setTopUpAmount('30')}>
+                                <Text style={styles.TopUpButtonText}>RM 30</Text>
+                            </TouchableOpacity>
+
+                        </View>
+                    </View>
+
                     <View style={styles.buttonContainer}>
+
                         <TouchableOpacity
-                            style={styles.TopUpButton}
+                            style={styles.functionButton}
                             onPress={handleTopUpPress}>
-                            <Text style={styles.TopUpButtonText}>Top Up Now</Text>
+                            <Text style={styles.BackButtonText}>Top Up Now</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.BackButton}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.functionButton}>
                             <Text style={styles.BackButtonText}>Return</Text>
                         </TouchableOpacity>
                     </View>
@@ -171,6 +224,7 @@ const styles = StyleSheet.create({
     input: {
         color: 'maroon',
         fontSize: 18,
+        marginLeft: 10,
     },
     button: {
         width: '100%',
@@ -194,20 +248,39 @@ const styles = StyleSheet.create({
     },
     amountText: {
         color: 'white',
-        fontSize: 18,
+        fontSize: 20,
         marginLeft: 25,
         marginVertical: 0,
+        fontWeight: 'bold',
     },
     buttonContainer: {
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 20, // Adjust this value as needed for spacing
     },
+    topupContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 10, // Adjust this value as needed for spacing
+    },
+    topupContainer: {
+        flex: 1,
+        padding: 30,
+        justifyContent: 'center',
+        marginBottom: 200,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 5,
+    },
     TopUpButton: {
+        flex: 1,
         backgroundColor: 'maroon',
         padding: 0,
-        borderRadius: 20,
+        borderRadius: 10,
         marginTop: 5,
+        marginRight: 10,
         width: 120,
         height: 50,
         justifyContent: 'center',
@@ -219,17 +292,31 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     BackButton: {
+        flex: 1,
         backgroundColor: 'maroon',
-        padding: 5,
-        borderRadius: 20,
-        marginTop: 10,
+        padding: 0,
+        borderRadius: 10,
+        marginTop: 5,
+        marginRight: 10,
         width: 120,
         height: 50,
         justifyContent: 'center',
         alignItems: 'center',
     },
+    functionButton: {
+        flex: 1,
+        backgroundColor: 'white',
+        padding: 0,
+        borderRadius: 10,
+        marginTop: 5,
+        marginRight: 10,
+        width: '80%',
+        height: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     BackButtonText: {
-        color: 'white',
+        color: 'maroon',
         fontSize: 18,
         textAlign: 'center',
     },

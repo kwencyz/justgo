@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 //import * as React from 'react';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { default as React, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Geocoder from 'react-native-geocoding';
@@ -179,34 +180,36 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          animation: "slide_from_right",
-        }}
-      >
-        {isLoggedIn ? (
-          <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }} />
-        ) : (
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ForgetPass" component={ForgetPassword} options={{ headerShown: false }} />
-            <Stack.Screen name="ScreenTemplate" component={ScreenTemplate} options={{ headerShown: false }} />
-            <Stack.Screen name="DriverMenu" component={DriverMenu} options={{ headerShown: false }} />
-            <Stack.Screen name="AdminMenu" component={AdminMenu} options={{ headerShown: false }} />
+    <StripeProvider publishableKey="pk_test_51OW1VFKMX5xqDUk5VgWWt745KxrNKhtgROxk1Tjvt67BVM1ltbYVreaUobesgLVA0RN2BpqeKzhYQat8nI5ZSwEt00vwWgqSlC">
+      <NavigationContainer>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            animation: "slide_from_right",
+          }}
+        >
+          {isLoggedIn ? (
             <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }} />
-            <Stack.Screen name="DriverDashboard" component={DriverTabNavigator} options={{ headerShown: false }} />
-            <Stack.Screen name="PassengerWallet" component={PassengerWallet} options={{ headerShown: false }} />
-            <Stack.Screen name="DriverWallet" component={DriverWallet} options={{ headerShown: false }} />
-            <Stack.Screen name="TopUpWallet" component={TopUpWallet} options={{ headerShown: false }} />
-            <Stack.Screen name="WithdrawWallet" component={WithdrawWallet} options={{ headerShown: false }} />
-            <Stack.Screen name="PassengerHistoryScreen" component={PassengerHistoryScreen} options={{ headerShown: false }} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+          ) : (
+            <>
+              <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="ForgetPass" component={ForgetPassword} options={{ headerShown: false }} />
+              <Stack.Screen name="ScreenTemplate" component={ScreenTemplate} options={{ headerShown: false }} />
+              <Stack.Screen name="DriverMenu" component={DriverMenu} options={{ headerShown: false }} />
+              <Stack.Screen name="AdminMenu" component={AdminMenu} options={{ headerShown: false }} />
+              <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }} />
+              <Stack.Screen name="DriverDashboard" component={DriverTabNavigator} options={{ headerShown: false }} />
+              <Stack.Screen name="PassengerWallet" component={PassengerWallet} options={{ headerShown: false }} />
+              <Stack.Screen name="DriverWallet" component={DriverWallet} options={{ headerShown: false }} />
+              <Stack.Screen name="TopUpWallet" component={TopUpWallet} options={{ headerShown: false }} />
+              <Stack.Screen name="WithdrawWallet" component={WithdrawWallet} options={{ headerShown: false }} />
+              <Stack.Screen name="PassengerHistoryScreen" component={PassengerHistoryScreen} options={{ headerShown: false }} />
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </StripeProvider>
   );
 }
 

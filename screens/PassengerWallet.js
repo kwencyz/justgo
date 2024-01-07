@@ -184,17 +184,17 @@ const styles = StyleSheet.create({
     marginTop: 420, // Adjust this value as needed for spacing
   },
   TopUpButton: {
-    backgroundColor: 'maroon',
+    backgroundColor: 'white',
     padding: 5,
     borderRadius: 20,
-    marginTop: 5,
-    width: 120,
+    marginTop: 150,
+    width: '80%',
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },
   TopUpButtonText: {
-    color: 'white',
+    color: 'maroon',
     fontSize: 18,
     textAlign: 'center',
   },

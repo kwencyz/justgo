@@ -69,16 +69,30 @@ export default function SignupScreen() {
     setUserType(selectedItem);
   };
 
-  const handlePhoneNumberChange = (text) => {
-    // Check if the input is a valid number
-    if (!/^\d+$/.test(text)) {
-      // Display an alert for non-numeric input
-      Alert.alert('Error', 'Please enter a valid numeric phone number.');
+  const handleRegister = () => {
+
+    // Validate email format and domain
+    const emailRegex = /^[^\s@]+@[siswa.ukm.edu.my]+$/;
+
+    if (!emailRegex.test(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address with @siswa.ukm.edu.my domain.');
       return;
+    } else {
+
+      console.log(phoneNumber);
+
+      if (/^01\d{8,9}$/.test(phoneNumber)) {
+        // Update the phoneNumber state if it's a valid number
+        setPhoneNumber(phoneNumber);
+        signUp();
+
+      } else {
+        Alert.alert('Error', 'Please enter a valid phone number.');
+        return;
+      }
+
     }
 
-    // Update the phoneNumber state if it's a valid number
-    setPhoneNumber(text);
   };
 
   return (
@@ -118,7 +132,7 @@ export default function SignupScreen() {
             <TextInput value={username} style={styles.input} placeholder='Username' placeholderTextColor={'maroon'} onChangeText={(text) => setUsername(text)} />
           </View>
           <View style={styles.inputContainer}>
-            <TextInput value={phoneNumber} keyboardType='numeric' style={styles.input} placeholder='Phone Number' placeholderTextColor={'maroon'} onChangeText={handlePhoneNumberChange} />
+            <TextInput value={phoneNumber} keyboardType='numeric' style={styles.input} placeholder='Phone Number' placeholderTextColor={'maroon'} onChangeText={(text) => setPhoneNumber(text)} />
           </View>
           <View style={styles.inputContainer}>
             <TextInput value={password} style={styles.input} placeholder='Password' placeholderTextColor={'maroon'} onChangeText={(text) => setPassword(text)} secureTextEntry />
@@ -135,7 +149,7 @@ export default function SignupScreen() {
             </View>
           )}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.button} onPress={() => signUp()}>
+            <TouchableOpacity style={styles.button} onPress={() => handleRegister()}>
               <Text style={styles.buttonText}>Sign Up</Text>
             </TouchableOpacity>
           </View>
