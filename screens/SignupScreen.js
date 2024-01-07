@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { createUserWithEmailAndPassword } from 'firebase/auth'; // Add this import
 import { doc, setDoc } from 'firebase/firestore';
 import { default as React, useState } from 'react';
-import { Dimensions, Image, KeyboardAvoidingView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, KeyboardAvoidingView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import SelectDropdown from 'react-native-select-dropdown';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
@@ -69,6 +69,18 @@ export default function SignupScreen() {
     setUserType(selectedItem);
   };
 
+  const handlePhoneNumberChange = (text) => {
+    // Check if the input is a valid number
+    if (!/^\d+$/.test(text)) {
+      // Display an alert for non-numeric input
+      Alert.alert('Error', 'Please enter a valid numeric phone number.');
+      return;
+    }
+
+    // Update the phoneNumber state if it's a valid number
+    setPhoneNumber(text);
+  };
+
   return (
     <KeyboardAvoidingView style={styles.container}>
       <StatusBar style='light' />
@@ -106,7 +118,7 @@ export default function SignupScreen() {
             <TextInput value={username} style={styles.input} placeholder='Username' placeholderTextColor={'maroon'} onChangeText={(text) => setUsername(text)} />
           </View>
           <View style={styles.inputContainer}>
-            <TextInput value={phoneNumber} style={styles.input} placeholder='Phone Number' placeholderTextColor={'maroon'} onChangeText={(text) => setPhoneNumber(text)} />
+            <TextInput value={phoneNumber} keyboardType='numeric' style={styles.input} placeholder='Phone Number' placeholderTextColor={'maroon'} onChangeText={handlePhoneNumberChange} />
           </View>
           <View style={styles.inputContainer}>
             <TextInput value={password} style={styles.input} placeholder='Password' placeholderTextColor={'maroon'} onChangeText={(text) => setPassword(text)} secureTextEntry />
@@ -115,7 +127,7 @@ export default function SignupScreen() {
             <View style={styles.inputContainer}>
               <TextInput
                 value={regNo}
-                style={styles.input}
+                style={[styles.input, { textTransform: 'uppercase' }]}
                 placeholder='Registration Number'
                 placeholderTextColor={'maroon'}
                 onChangeText={(text) => setRegNo(text)}

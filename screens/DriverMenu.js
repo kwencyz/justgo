@@ -179,6 +179,19 @@ export default function DriverMenu() {
                 status: 'completed',
             });
 
+            // Fetch the driver's current wallet balance
+            const driverDocRef = doc(firestore, 'driverdb', selectedOrder.driverId);
+            const driverDocSnapshot = await getDoc(driverDocRef);
+            const currentWalletBalance = driverDocSnapshot.data().wallet;
+
+            // Subtract the order price from the current wallet balance
+            const updatedWalletBalance = currentWalletBalance + selectedOrder.price;
+
+            // Update the wallet field in the driverdb with the new balance
+            await updateDoc(driverDocRef, {
+                wallet: updatedWalletBalance,
+            });
+
             // Refresh the orders
             refreshOrders();
 

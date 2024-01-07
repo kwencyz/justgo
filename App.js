@@ -180,7 +180,12 @@ function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animation: "slide_from_right",
+        }}
+      >
         {isLoggedIn ? (
           <Stack.Screen name="PassengerDashboard" component={PassengerTabNavigator} options={{ headerShown: false }} />
         ) : (

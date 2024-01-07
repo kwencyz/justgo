@@ -66,14 +66,50 @@ export default function PassengerHistoryScreen() {
     );
   };
 
-  const handleRefresh = () => {
-    // Set refreshing state to true to indicate the start of refresh
-    setIsRefreshing(true);
+  /*   const handleRefresh = () => {
+      // Set refreshing state to true to indicate the start of refresh
+      setIsRefreshing(true);
+  
+      setTimeout(() => {
+  
+        setIsRefreshing(false);
+      }, 2000); // Simulated delay of 2 seconds (replace this with actual data fetching logic)
+    }; */
 
-    setTimeout(() => {
+  const handleRefresh = async () => {
+    try {
+      // Set refreshing state to true to indicate the start of refresh
+      setIsRefreshing(true);
 
+      // Simulate a delay (optional)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Fetch updated data from Firestore
+      const userId = auth.currentUser.uid;
+      const orderHistoryRef = collection(firestore, 'orderdetailsdb');
+      const orderHistorySnapshots = await getDocs(orderHistoryRef);
+      const orderHistoryData = orderHistorySnapshots.docs.map((doc) => doc.data());
+
+      // Filter orders based on passengerId
+      const filteredPending = orderHistoryData.filter((order) => order.status === 'pending' && order.passengerId === userId);
+      const filteredInProgress = orderHistoryData.filter((order) =>
+        (order.status === 'accepted' && order.passengerId === userId) ||
+        (order.status === 'in-progress' && order.passengerId === userId)
+      );
+      const filteredCompleted = orderHistoryData.filter((order) => order.status === 'completed' && order.passengerId === userId);
+
+      // Set the updated data in state
+      setOrderHistory(orderHistoryData);
+      setPendingOrders(filteredPending);
+      setInProgressOrders(filteredInProgress);
+      setCompletedOrders(filteredCompleted);
+
+    } catch (error) {
+      console.error('Error fetching updated order history:', error);
+    } finally {
+      // Set refreshing state to false to indicate the end of refresh
       setIsRefreshing(false);
-    }, 2000); // Simulated delay of 2 seconds (replace this with actual data fetching logic)
+    }
   };
 
   return (
@@ -93,6 +129,7 @@ export default function PassengerHistoryScreen() {
       </View>
 
       <FlatList
+        style={styles.flatListContainer}
         data={[
           { title: 'Pending Orders', data: pendingOrders },
           { title: 'Orders In-Progress', data: inProgressOrders },
@@ -146,6 +183,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
+    marginBottom: 90,
   },
   backgroundImage: {
     ...StyleSheet.absoluteFillObject,
@@ -189,8 +227,8 @@ const styles = StyleSheet.create({
     // /fontWeight: 'bold',
   },
   flatListContainer: {
-    width: '90%',
-    marginLeft: 20,
-    marginTop: -10,
+    width: '95%',
+    marginLeft: 10,
+    marginBottom: 10,
   },
 });

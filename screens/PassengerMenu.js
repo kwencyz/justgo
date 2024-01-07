@@ -226,7 +226,7 @@ export default function PassengerMenu() {
                         destination: destination,
                         passengerId: auth.currentUser.uid,
                         distance: distance,
-                        price: price,
+                        price: parseFloat(price),
                         status: 'pending',
                         timestamp: serverTimestamp(), // Firestore server timestamp
                     };
