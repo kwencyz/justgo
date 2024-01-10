@@ -9,6 +9,7 @@ import { default as React, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Geocoder from 'react-native-geocoding';
 import AdminMenu from './screens/AdminMenu';
+import ConfirmationScreen from './screens/ConfirmationScreen';
 import DriverHistoryScreen from './screens/DriverHistoryScreen';
 import DriverMenu from './screens/DriverMenu';
 import DriverWallet from './screens/DriverWallet';
@@ -16,6 +17,7 @@ import ForgetPassword from './screens/ForgetPassword';
 import LoginScreen from './screens/LoginScreen';
 import PassengerHistoryScreen from './screens/PassengerHistoryScreen';
 import PassengerMenu from './screens/PassengerMenu';
+import PassengerStatusScreen from './screens/PassengerStatusScreen';
 import PassengerWallet from './screens/PassengerWallet';
 import ScreenTemplate from './screens/ScreenTemplate';
 import SignupScreen from './screens/SignupScreen';
@@ -205,6 +207,8 @@ function App() {
               <Stack.Screen name="TopUpWallet" component={TopUpWallet} options={{ headerShown: false }} />
               <Stack.Screen name="WithdrawWallet" component={WithdrawWallet} options={{ headerShown: false }} />
               <Stack.Screen name="PassengerHistoryScreen" component={PassengerHistoryScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="PassengerStatusScreen" component={PassengerStatusScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="ConfirmationScreen" component={ConfirmationScreen} options={{ headerShown: false }} />
             </>
           )}
         </Stack.Navigator>

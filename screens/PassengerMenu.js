@@ -236,12 +236,14 @@ export default function PassengerMenu() {
                         ...orderData,
                     });
 
+                    const orderId = orderDocRef.id;
+
                     await setDoc(orderDocRef, {
                         ...orderData,
-                        orderId: orderDocRef.id, // Set order ID with the auto-generated ID
+                        orderId: orderId, // Set order ID with the auto-generated ID
                     });
 
-                    console.log('Order placed successfully:', orderDocRef.id);
+                    console.log('Order placed successfully:', orderId);
 
                     // Clear input fields
                     setOrigin('');
@@ -255,7 +257,7 @@ export default function PassengerMenu() {
                         ToastAndroid.show('Payment is completed.We will notify you once a driver accepts your order', ToastAndroid.SHORT);
                     };
                     showToast();
-                    navigation.navigate('PassengerHistoryScreen');
+
                 } else {
                     // Wallet balance is insufficient, display a toast message
                     const showToast = () => {
@@ -274,6 +276,19 @@ export default function PassengerMenu() {
             console.error('Error placing order:', error.message);
         }
     };
+
+    const navigateScreen = () => {
+        if (!distance) {
+            alert('Please select pickup location and destination.');
+        } else {
+            navigation.navigate('ConfirmationScreen', {
+                origin,
+                destination,
+                distance,
+                price,
+            });
+        }
+    }
 
     return (
         <KeyboardAvoidingView style={styles.container}>
@@ -372,9 +387,9 @@ export default function PassengerMenu() {
                             </View>
                             <TouchableOpacity
                                 style={styles.orderNowButton}
-                                onPress={passwordVerify}
+                                onPress={navigateScreen}
                             >
-                                <Text style={styles.orderNowButtonText}>Order Now</Text>
+                                <Text style={styles.orderNowButtonText}>Confirm Payment</Text>
                             </TouchableOpacity>
                         </Animated.View>
                         <Modal
@@ -552,9 +567,10 @@ const styles = StyleSheet.create({
     },
     orderNowButton: {
         backgroundColor: 'maroon',
-        borderRadius: 20,
-        marginLeft: 145,
-        width: 120,
+        borderRadius: 15,
+        marginTop: 5,
+        marginLeft: 20,
+        width: '90%',
         padding: 10,
         justifyContent: 'center',
         alignItems: 'center',

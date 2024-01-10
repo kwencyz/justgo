@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { collection, getDocs, getFirestore } from 'firebase/firestore';
 import { default as React, useEffect, useState } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH } from '../FirebaseConfig';
 
 export default function PassengerHistoryScreen() {
@@ -54,27 +54,18 @@ export default function PassengerHistoryScreen() {
     const orderTimestamp = item.timestamp.toDate();
 
     return (
-      <View style={styles.orderItem} key={item.id}>
-        <Text style={styles.orderText}>Pickup Address: {item.origin.name}</Text>
-        <Text style={styles.orderText}>Delivery Address: {item.destination.name}</Text>
-        <Text style={styles.orderText}>Total Price: RM{item.price}</Text>
+      <TouchableOpacity style={styles.FlatViewButton} onPress={() => navigateToPassengerStatusScreen(item)}>
+        <View style={styles.orderItem} key={item.id}>
+          <Text style={styles.orderText}>Pickup Address: {item.origin.name}</Text>
+          <Text style={styles.orderText}>Delivery Address: {item.destination.name}</Text>
+          <Text style={styles.orderText}>Total Price: RM{item.price}</Text>
 
-        <Text style={styles.orderText}>Date: {orderTimestamp.toLocaleDateString()}</Text>
-        <Text style={styles.orderText}>Time: {orderTimestamp.toLocaleTimeString()}</Text>
-
-      </View>
+          <Text style={styles.orderText}>Date: {orderTimestamp.toLocaleDateString()}</Text>
+          <Text style={styles.orderText}>Time: {orderTimestamp.toLocaleTimeString()}</Text>
+        </View>
+      </TouchableOpacity>
     );
   };
-
-  /*   const handleRefresh = () => {
-      // Set refreshing state to true to indicate the start of refresh
-      setIsRefreshing(true);
-  
-      setTimeout(() => {
-  
-        setIsRefreshing(false);
-      }, 2000); // Simulated delay of 2 seconds (replace this with actual data fetching logic)
-    }; */
 
   const handleRefresh = async () => {
     try {
@@ -110,6 +101,10 @@ export default function PassengerHistoryScreen() {
       // Set refreshing state to false to indicate the end of refresh
       setIsRefreshing(false);
     }
+  };
+
+  const navigateToPassengerStatusScreen = (orderId) => {
+    navigation.navigate('PassengerStatusScreen', { orderId });
   };
 
   return (

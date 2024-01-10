@@ -82,9 +82,6 @@ export default function DriverMenu() {
                 const orderSnapshots = await getDocs(ordersRef);
                 const orderDetailsData = orderSnapshots.docs.map((doc) => doc.data());
 
-                /*                 //Filter orders based on status
-                                const filteredOrders = orderDetailsData.filter(order => order.status === selectedStatus); */
-
                 // Filter orders based on status and current user's ID
                 const filteredOrders = orderDetailsData.filter(order => {
                     if ((selectedStatus === 'pending' && order.status === 'pending') ||
