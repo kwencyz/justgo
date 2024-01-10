@@ -69,8 +69,7 @@ export default function ConfirmationScreen() {
                         ToastAndroid.show('Payment is completed.We will notify you once a driver accepts your order', ToastAndroid.SHORT);
                     };
                     showToast();
-
-                    navigation.navigate('PassengerStatusScreen', { orderId });
+                    navigateToPassengerHistoryScreen();
 
                 } else {
                     // Wallet balance is insufficient, display a toast message
@@ -89,6 +88,10 @@ export default function ConfirmationScreen() {
         } catch (error) {
             console.error('Error placing order:', error.message);
         }
+    };
+
+    const navigateToPassengerHistoryScreen = () => {
+        navigation.navigate('PassengerHistoryScreen');
     };
 
     const [walletBalance, setWalletBalance] = useState(0);
@@ -296,6 +299,7 @@ const styles = StyleSheet.create({
     priceDetailContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         margin: 5,
         backgroundColor: 'white',
         padding: 20,
