@@ -125,8 +125,15 @@ export default function ConfirmationScreen() {
             }
         };
 
-        // Call the fetchWalletBalance function when the component mounts
-        fetchWalletBalance();
+        const refreshBalance = () => {
+            fetchWalletBalance();
+
+            const intervalId = setInterval(fetchWalletBalance, 2000);
+
+            return () => clearInterval(intervalId); // Clean up interval on unmount
+        };
+
+        refreshBalance();
     }, [auth.currentUser.uid, firestore]);
 
     const navigateScreen = () => {

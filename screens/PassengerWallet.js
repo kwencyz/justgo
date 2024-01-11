@@ -44,6 +44,7 @@ export default function PassengerWallet() {
 
     return () => { }; // No cleanup required for this effect
   }, []);
+  
   const handleTopUpPress = () => {
     navigation.navigate('TopUpWallet');
   };

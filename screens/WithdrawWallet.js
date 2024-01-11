@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
@@ -61,6 +61,24 @@ export default function WithdrawWallet() {
                     await setDoc(userDocRef, { wallet: updatedBalance }, { merge: true });
 
                     console.log('Wallet updated successfully!');
+
+                    const driverWalletCollectionRef = collection(firestore, 'driverwallet');
+                    const timestamp = serverTimestamp();
+
+                    const transactionRef = await addDoc(driverWalletCollectionRef, {
+                        userId: userId,
+                        topupAmount: parseFloat(topUpAmount), // Assuming topUpAmount is a string, parse it to a float
+                        updatedBalance: updatedBalance,
+                        timestamp: timestamp,
+                    });
+
+                    const transactionId = transactionRef.id;
+
+                    await updateDoc(doc(driverWalletCollectionRef, transactionId), {
+                        transactionId: transactionId,
+                    });
+
+                    console.log('Transaction details uploaded successfully!', transactionId);
 
                     // Clear the topUpAmount field after successful update
                     setTopUpAmount('');
@@ -241,6 +259,6 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 18,
         textAlign: 'center',
-        
+
     },
 });

@@ -122,7 +122,6 @@ export default function DriverHistoryScreen() {
             <FlatList
                 style={styles.flatListContainer}
                 data={[
-                    { title: 'Pending Orders', data: pendingOrders },
                     { title: 'Orders In-Progress', data: inProgressOrders },
                     { title: 'Completed Orders', data: completedOrders },
                 ]}
@@ -191,11 +190,12 @@ const styles = StyleSheet.create({
         marginHorizontal: 10,
     },
     section: {
-        marginBottom: 20,
+        marginTop: 10,
+        marginLeft: 10,
     },
     sectionHeader: {
-        fontSize: 24,
-        fontWeight: '300',
+        fontSize: 20,
+        fontWeight: 'bold',
         marginBottom: 10,
         color: 'white',
     },

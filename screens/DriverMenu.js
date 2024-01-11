@@ -1,6 +1,6 @@
 import { collection, doc, getDoc, getDocs, getFirestore, setDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, Modal, StatusBar, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, Modal, RefreshControl, StatusBar, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH } from '../FirebaseConfig';
 
 export default function DriverMenu() {
@@ -16,6 +16,8 @@ export default function DriverMenu() {
 
     const [userData, setUserData] = useState(null);
     const auth = FIREBASE_AUTH;
+
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -102,17 +104,27 @@ export default function DriverMenu() {
         fetchOrders();
     }, [auth.currentUser.uid, firestore, selectedStatus]);
 
-    useEffect(() => {
-        const intervalId = setInterval(refreshOrders, 5000); // Refresh orders every 5 seconds
-        return () => clearInterval(intervalId); // Clean up timer on unmount
-    }, []);
-
     const refreshOrders = async () => {
         try {
-            const ordersRef = collection(firestore, 'orderdetailsdb');
-            const orderSnapshots = await getDocs(ordersRef)
+            setIsRefreshing(true)
+            const ordersRef = collection(firestore, 'orderdetailsdb'); // Use collection() function
+            const orderSnapshots = await getDocs(ordersRef);
             const orderDetailsData = orderSnapshots.docs.map((doc) => doc.data());
+
+            // Filter orders based on status and current user's ID
+            const filteredOrders = orderDetailsData.filter(order => {
+                if ((selectedStatus === 'pending' && order.status === 'pending') ||
+                    (order.status === selectedStatus && order.driverId === auth.currentUser.uid)
+                ) {
+                    return true;
+                }
+                return false;
+            });
+
             setOrders(orderDetailsData);
+            setFilteredOrders(filteredOrders);
+            setIsRefreshing(false)
+
         } catch (error) {
             console.error('Error fetching orders:', error);
         }
@@ -224,36 +236,33 @@ export default function DriverMenu() {
             </View>
 
             <View style={styles.formContainer}>
-                <TouchableOpacity style={styles.refreshButton} onPress={refreshOrders}>
-                    <Text style={styles.refreshButtonText}>Refresh</Text>
-                </TouchableOpacity>
                 <View style={styles.filterButtonsContainer}>
                     <TouchableOpacity
                         style={[styles.filterButton, selectedStatus === 'pending' && styles.selectedFilterButton]}
                         onPress={() => setSelectedStatus('pending')}
                     >
-                        <Text>Pending</Text>
+                        <Text style={styles.filterButtonsText}>Pending</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={[styles.filterButton, selectedStatus === 'accepted' && styles.selectedFilterButton]}
                         onPress={() => setSelectedStatus('accepted')}
                     >
-                        <Text>Accepted</Text>
+                        <Text style={styles.filterButtonsText}>Accepted</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={[styles.filterButton, selectedStatus === 'in-progress' && styles.selectedFilterButton]}
                         onPress={() => setSelectedStatus('in-progress')}
                     >
-                        <Text>In Progress</Text>
+                        <Text style={styles.filterButtonsText}>In Progress</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={[styles.filterButton, selectedStatus === 'completed' && styles.selectedFilterButton]}
                         onPress={() => setSelectedStatus('completed')}
                     >
-                        <Text>Completed</Text>
+                        <Text style={styles.filterButtonsText}>Completed</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -263,6 +272,18 @@ export default function DriverMenu() {
                     data={filteredOrders}
                     keyExtractor={(item, index) => `order-${index}`}
                     renderItem={renderItem}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isRefreshing}
+                            onRefresh={refreshOrders}
+                            colors={['red', 'maroon']}
+                            progressBackgroundColor="white"
+                            tintColor="maroon"
+                            size="large"
+                            title="Refreshing"
+                            titleColor="black"
+                        />
+                    }
                 />
 
                 <Modal
@@ -486,15 +507,22 @@ const styles = StyleSheet.create({
     filterButtonsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginTop: 10,
+        marginTop: 0,
+    },
+    filterButtonsText: {
+        color: 'white',
+        fontSize: 15,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
     filterButton: {
         padding: 10,
-        borderRadius: 10,
-        backgroundColor: 'lightgray',
+        borderBottomWidth: 3,
+        borderBottomColor: 'rgba(255, 255, 255, 0)',
     },
     selectedFilterButton: {
-        backgroundColor: 'gray',
+        backgroundColor: 'rgba(120, 0, 0, 0.5)',
+        borderBottomColor: 'maroon',
     },
     flatListContainer: {
         flex: 1,

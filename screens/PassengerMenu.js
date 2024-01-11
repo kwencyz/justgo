@@ -287,6 +287,10 @@ export default function PassengerMenu() {
                 distance,
                 price,
             });
+            setOrigin('')
+            setDestination('')
+            setDistance('')
+            setPrice('')
         }
     }
 

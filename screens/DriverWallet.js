@@ -1,8 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { collection, doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
 export default function DriverWallet() {
@@ -12,6 +12,8 @@ export default function DriverWallet() {
     const [userData, setUserData] = useState(null);
     const auth = FIREBASE_AUTH;
     const firestore = FIRESTORE;
+
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => {
         // Function to fetch balance from Firestore
@@ -44,9 +46,49 @@ export default function DriverWallet() {
 
         return () => { }; // No cleanup required for this effect
     }, []);
+
+    const fetchTransactions = async () => {
+        try {
+
+            const driverWalletCollectionRef = collection(firestore, 'driverwallet');
+            const querySnapshot = await getDocs(driverWalletCollectionRef);
+
+            const transactions = [];
+            querySnapshot.forEach((doc) => {
+                const transactionData = doc.data();
+
+                transactionData.id = doc.id;
+                transactions.push(transactionData);
+            });
+
+            setUserData(transactions);
+        } catch (error) {
+            console.error('Error fetching transactions:', error.message);
+        }
+    };
+
     const handleTopUpPress = () => {
         navigation.navigate('WithdrawWallet');
     };
+
+    const renderItem = ({ item }) => (
+        <View style={styles.flatlistItem}>
+            <Text>test{item.userId}</Text>
+            <Text>{item.topupAmount}</Text>
+            <Text>{item.updatedBalance}</Text>
+            <Text>{item.timestamp.toDate().toString()}</Text>
+        </View>
+    );
+
+    const refreshTransactions = async () => {
+        setIsRefreshing(true);
+        await fetchTransactions();
+        setIsRefreshing(false);
+    };
+
+    useEffect(() => {
+        fetchTransactions();
+    }, []);
 
     return (
         <KeyboardAvoidingView style={styles.container}>
@@ -87,16 +129,38 @@ export default function DriverWallet() {
 
                 </View>
 
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={styles.TopUpButton}
-                        onPress={handleTopUpPress}
-                    >
-                        <Text style={styles.TopUpButtonText}>Withdraw Wallet</Text>
-                    </TouchableOpacity>
-                </View>
-
             </View>
+            <View style={{ marginTop: 100 }}>
+                <FlatList
+                    style={styles.flatListContainer}
+                    data={userData}
+                    keyExtractor={(transaction) => transaction.id}
+                    renderItem={renderItem}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isRefreshing}
+                            onRefresh={refreshTransactions}
+                            colors={['red', 'maroon']}
+                            progressBackgroundColor="white"
+                            tintColor="maroon"
+                            size="large"
+                            title="Refreshing"
+                            titleColor="black"
+                        />
+                    }
+                />
+            </View>
+
+            <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                    style={styles.TopUpButton}
+                    onPress={handleTopUpPress}
+                >
+                    <Text style={styles.TopUpButtonText}>Withdraw Wallet</Text>
+                </TouchableOpacity>
+            </View>
+
+
 
         </KeyboardAvoidingView>
     );
@@ -144,18 +208,17 @@ const styles = StyleSheet.create({
         height: 300,
     },
     formContainer: {
-        flex: 1 / 4,
-        //justifyContent: 'top',
+        height: 180,
         alignItems: 'left',
-        marginTop: 0,
         backgroundColor: 'maroon',
         borderBottomLeftRadius: 20,
         borderBottomRightRadius: 20,
+        marginBottom: -50,
     },
     walletContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: 20,
+        marginLeft: 30,
     },
     balanceContainer: {
         marginRight: 100,
@@ -181,13 +244,13 @@ const styles = StyleSheet.create({
     buttonContainer: {
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 420, // Adjust this value as needed for spacing
+        marginTop: 0, // Adjust this value as needed for spacing
     },
     TopUpButton: {
         backgroundColor: 'maroon',
         padding: 5,
         borderRadius: 20,
-        marginTop: 150,
+        marginTop: 50,
         width: '80%',
         height: 50,
         justifyContent: 'center',
@@ -197,5 +260,18 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 18,
         textAlign: 'center',
+    },
+    flatListContainer: {
+        width: '90%',
+        marginLeft: 20,
+        marginBottom: 0,
+    },
+    flatlistItem: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#ccc',
+        backgroundColor: 'white',
+        marginBottom: 10,
+        borderRadius: 12,
     },
 });
