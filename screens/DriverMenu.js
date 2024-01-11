@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, getFirestore, setDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, getFirestore, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Modal, RefreshControl, StatusBar, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH } from '../FirebaseConfig';
@@ -200,6 +200,26 @@ export default function DriverMenu() {
             await updateDoc(driverDocRef, {
                 wallet: updatedWalletBalance,
             });
+            const userId = auth.currentUser.uid;
+
+            const driverWalletCollectionRef = collection(firestore, 'driverwallet');
+            const timestamp = serverTimestamp();
+
+            const transactionRef = await addDoc(driverWalletCollectionRef, {
+                userId: userId,
+                topupAmount: selectedOrder.price,
+                updatedBalance: updatedWalletBalance,
+                timestamp: timestamp,
+                status: 'earning',
+            });
+
+            const transactionId = transactionRef.id;
+
+            await updateDoc(doc(driverWalletCollectionRef, transactionId), {
+                transactionId: transactionId,
+            });
+
+            console.log('Transaction details uploaded successfully!', transactionId);
 
             // Refresh the orders
             refreshOrders();
@@ -518,10 +538,10 @@ const styles = StyleSheet.create({
     filterButton: {
         padding: 10,
         borderBottomWidth: 3,
-        borderBottomColor: 'rgba(255, 255, 255, 0)',
+        borderBottomColor: 'rgba(120, 0, 0, 0.3)',
     },
     selectedFilterButton: {
-        backgroundColor: 'rgba(120, 0, 0, 0.5)',
+        backgroundColor: 'rgba(120, 0, 0, 0.7)',
         borderBottomColor: 'maroon',
     },
     flatListContainer: {

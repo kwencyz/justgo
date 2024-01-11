@@ -12,6 +12,7 @@ export default function DriverWallet() {
     const [userData, setUserData] = useState(null);
     const auth = FIREBASE_AUTH;
     const firestore = FIRESTORE;
+    const [sortedData, setSortedData] = useState([]);
 
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -36,6 +37,7 @@ export default function DriverWallet() {
 
         const refreshBalance = () => {
             fetchBalance(); // Fetch balance initially
+            refreshTransactions();
 
             const intervalId = setInterval(fetchBalance, 2000);
 
@@ -60,6 +62,9 @@ export default function DriverWallet() {
                 transactionData.id = doc.id;
                 transactions.push(transactionData);
             });
+            const sortedTransactions = transactions.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+            setUserData(sortedTransactions);
+            setSortedData(sortedTransactions);
 
             setUserData(transactions);
         } catch (error) {
@@ -73,10 +78,23 @@ export default function DriverWallet() {
 
     const renderItem = ({ item }) => (
         <View style={styles.flatlistItem}>
-            <Text>test{item.userId}</Text>
-            <Text>{item.topupAmount}</Text>
-            <Text>{item.updatedBalance}</Text>
-            <Text>{item.timestamp.toDate().toString()}</Text>
+            <View style={styles.transactionDetailContainer}>
+                <Text style={styles.transactionDetailText}>Date: </Text>
+                <Text style={styles.transactionDetailText}>{item.timestamp.toDate().toLocaleDateString()}</Text>
+            </View>
+            <View style={styles.transactionDetailContainer}>
+                <Text style={styles.transactionDetailText}>Time: </Text>
+                <Text style={styles.transactionDetailText}>{item.timestamp.toDate().toLocaleTimeString()}</Text>
+            </View>
+            <View style={styles.transactionDetailContainer}>
+                <Text style={styles.transactionDetailText}>Withdraw Amount: </Text>
+                <Text style={styles.transactionDetailText}>RM {item.topupAmount}</Text>
+            </View>
+            <View style={styles.transactionDetailContainer}>
+                <Text style={styles.transactionDetailText}>Transaction: </Text>
+                <Text style={styles.transactionDetailText}>{item.status.toUpperCase()}</Text>
+            </View>
+
         </View>
     );
 
@@ -130,10 +148,11 @@ export default function DriverWallet() {
                 </View>
 
             </View>
-            <View style={{ marginTop: 100 }}>
+            <View>
+                <Text style={{ marginLeft: 20, ...styles.balanceText }}>Transaction History:</Text>
                 <FlatList
                     style={styles.flatListContainer}
-                    data={userData}
+                    data={sortedData}
                     keyExtractor={(transaction) => transaction.id}
                     renderItem={renderItem}
                     refreshControl={
@@ -208,12 +227,12 @@ const styles = StyleSheet.create({
         height: 300,
     },
     formContainer: {
-        height: 180,
+        height: 170,
         alignItems: 'left',
         backgroundColor: 'maroon',
         borderBottomLeftRadius: 20,
         borderBottomRightRadius: 20,
-        marginBottom: -50,
+        marginBottom: 10,
     },
     walletContainer: {
         flexDirection: 'row',
@@ -224,6 +243,7 @@ const styles = StyleSheet.create({
         marginRight: 100,
     },
     balanceText: {
+        fontWeight: 'bold',
         marginBottom: 15,
         marginTop: -5,
         color: 'white',
@@ -250,7 +270,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'maroon',
         padding: 5,
         borderRadius: 20,
-        marginTop: 50,
+        marginTop: 0,
         width: '80%',
         height: 50,
         justifyContent: 'center',
@@ -263,8 +283,9 @@ const styles = StyleSheet.create({
     },
     flatListContainer: {
         width: '90%',
+        height: '46%',
         marginLeft: 20,
-        marginBottom: 0,
+        marginBottom: 10,
     },
     flatlistItem: {
         padding: 10,
@@ -273,5 +294,15 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         marginBottom: 10,
         borderRadius: 12,
+    },
+    transactionDetailContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    transactionDetailText: {
+        color: 'black',
+        fontSize: 18,
+        textAlign: 'center',
     },
 });

@@ -67,9 +67,10 @@ export default function WithdrawWallet() {
 
                     const transactionRef = await addDoc(driverWalletCollectionRef, {
                         userId: userId,
-                        topupAmount: parseFloat(topUpAmount), // Assuming topUpAmount is a string, parse it to a float
+                        withdrawAmount: parseFloat(topUpAmount), // Assuming topUpAmount is a string, parse it to a float
                         updatedBalance: updatedBalance,
                         timestamp: timestamp,
+                        status: 'withdrawal',
                     });
 
                     const transactionId = transactionRef.id;
