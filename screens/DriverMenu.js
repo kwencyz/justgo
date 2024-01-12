@@ -329,11 +329,11 @@ export default function DriverMenu() {
                                 )}
 
                                 {selectedOrder.status === 'accepted' && (
-                                    <ModalButton text="Pickup" onPress={() => pickupPassenger(selectedOrder)} />
+                                    <ModalButton text="Pickup" onPress={() => pickupPassenger(selectedOrder, setModalVisible(false))} />
                                 )}
 
                                 {selectedOrder.status === 'in-progress' && (
-                                    <ModalButton text="Drop-off Passenger" onPress={() => dropOffPassenger(selectedOrder)} />
+                                    <ModalButton text="Drop-off Passenger" onPress={() => dropOffPassenger(selectedOrder, setModalVisible(false))} />
                                 )}
 
                                 <ModalButton text="Close" onPress={() => setModalVisible(false)} />

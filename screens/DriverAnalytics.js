@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Image, KeyboardAvoidingView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
@@ -10,28 +10,153 @@ export default function DriverAnalyticsScreen() {
     const auth = FIREBASE_AUTH;
     const firestore = FIRESTORE;
 
-    const [earningsData, setEarningsData] = useState(null);
+    const [totalEarningsByDay, setTotalEarningsByDay] = useState(null);
+
     const { width: screenWidth } = useWindowDimensions();
 
+    const getDayKey = (date) => {
+        const currentDate = new Date(date);
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Month is zero-based
+        return `${day}/${month}`;
+    };
+
+    const calculateTotalEarningsByDay = async (userId, days = 5) => {
+        try {
+            // Fetch earnings data from Firestore
+            const orderRef = collection(firestore, 'driverwallet');
+            const q = query(
+                orderRef,
+                where('userId', '==', userId),
+                where('status', '==', 'earning'),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const orderData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by day
+            const earningsByDay = orderData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate(); // Assuming 'timestamp' is a Firestore timestamp
+                const dayKey = getDayKey(timestamp);
+                acc[dayKey] = (acc[dayKey] || 0) + data.earningAmount;
+                return acc;
+            }, {});
+
+            return earningsByDay;
+        } catch (error) {
+            console.error('Error calculating total earnings by day:', error);
+            return null;
+        }
+    };
+
     useEffect(() => {
-        const fetchEarnings = async () => {
+        const fetchTotalEarningsByDay = async () => {
             try {
-                // Assuming you have stored the user ID in auth.currentUser.uid
                 const userId = auth.currentUser.uid;
+                const totalEarnings = await calculateTotalEarningsByDay(userId, 5); // Fetch data for the last 5 days
 
-                // Fetch earnings data from Firestore
-                const orderRef = collection(firestore, 'driverwallet');
-                const querySnapshot = await getDocs(query(orderRef, where('userId', '==', userId), where('status', '==', 'earning')));
-                const orderData = querySnapshot.docs.map((doc) => doc.data());
+                // Ensure that totalEarningsByDay starts from zero
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - 4); // Assuming you want data for the last 5 days
+                const labels = Array.from({ length: 5 }, (_, index) => getDayKey(new Date(startDate.setDate(startDate.getDate() + 1))));
 
-                setEarningsData(orderData);
+                const paddedEarnings = labels.map((label) => totalEarnings[label] || 0);
 
+                setTotalEarningsByDay({
+                    labels,
+                    data: paddedEarnings,
+                });
             } catch (error) {
-                console.error('Error fetching earnings:', error);
+                console.error('Error fetching total earnings by day:', error);
             }
         };
 
-        fetchEarnings();
+        fetchTotalEarningsByDay();
+    }, [auth.currentUser.uid, firestore]);
+
+    const [totalEarningPerWeek, setTotalEarningPerWeek] = useState(null);
+    const [totalOrderPerWeek, setTotalOrderPerWeek] = useState(null);
+
+    const calculateWeeklyOrders = async (userId, days = 7) => {
+        try {
+            // Fetch data from Firestore
+            const orderRef = collection(firestore, 'orderdetailsdb');
+            const q = query(
+                orderRef,
+                where('driverId', '==', userId),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const orderData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by day
+            const completedOrdersByDay = orderData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate();
+                const dayKey = getDayKey(timestamp);
+                if (data.status === 'completed') {
+                    acc[dayKey] = (acc[dayKey] || 0) + 1;
+                }
+                return acc;
+            }, {});
+
+            return completedOrdersByDay;
+        } catch (error) {
+            console.error('Error calculating weekly completed orders:', error);
+            return null;
+        }
+    };
+
+    const calculateWeeklyEarnings = async (userId, days = 7) => {
+        try {
+            // Fetch data from Firestore
+            const walletRef = collection(firestore, 'driverwallet');
+            const q = query(
+                walletRef,
+                where('userId', '==', userId),
+                where('status', '==', 'earning'),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const walletData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by day and calculate total earnings
+            const totalsByDay = walletData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate();
+                const dayKey = getDayKey(timestamp);
+                const earningAmount = data.earningAmount || 0;
+
+                acc[dayKey] = (acc[dayKey] || 0) + earningAmount;
+                return acc;
+            }, {});
+
+            return totalsByDay;
+        } catch (error) {
+            console.error('Error calculating weekly earnings:', error);
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        const fetchWeeklyData = async () => {
+            try {
+                const userId = auth.currentUser.uid;
+
+                // Calculate weekly earnings
+                const weeklyEarnings = await calculateWeeklyEarnings(userId, 7);
+                setTotalEarningPerWeek(weeklyEarnings);
+
+                // Calculate total orders (you can replace this with your own function)
+                const weeklyOrders = await calculateWeeklyOrders(userId, 7);
+                setTotalOrderPerWeek(weeklyOrders);
+            } catch (error) {
+                console.error('Error fetching weekly data:', error);
+            }
+        };
+
+        fetchWeeklyData();
     }, [auth.currentUser.uid, firestore]);
 
     return (
@@ -52,40 +177,48 @@ export default function DriverAnalyticsScreen() {
 
             <View style={styles.formContainer}>
                 {/* container */}
-                <View>
-                    <Text>Weekly Earnings Graph</Text>
-                    {earningsData ? (
+                <View style={styles.graphContainer}>
+                    <Text style={{ marginTop: 10, marginBottom: 10, ...styles.sectionHeader }}>Daily Earnings Graph</Text>
+                    {totalEarningsByDay ? (
                         <LineChart
                             data={{
-                                labels: earningsData.map((data, index) => index.toString()),
+                                labels: totalEarningsByDay.labels,
                                 datasets: [
                                     {
-                                        data: earningsData.map((data) => data.earningAmount),
+                                        data: totalEarningsByDay.data,
                                     },
                                 ],
                             }}
-                            width={screenWidth}
+                            width={screenWidth - 50} // Adjust width as needed
                             height={220}
                             chartConfig={{
-                                backgroundColor: '#ffffff',
+                                backgroundColor: 'rgba(255, 255, 255, 0)',
                                 backgroundGradientFrom: '#ffffff',
                                 backgroundGradientTo: '#ffffff',
-                                decimalPlaces: 2, // Adjust as needed
+                                decimalPlaces: 2,
                                 color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                                 labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                                 style: {
                                     borderRadius: 16,
                                 },
-                                propsForDots: {
-                                    r: '6',
-                                    strokeWidth: '2',
-                                    stroke: '#ffa726',
-                                },
+                                yAxisInterval: 10,
                             }}
                         />
                     ) : (
                         <Text>Loading...</Text>
                     )}
+                </View>
+                <Text style={{ marginTop: 20, ...styles.sectionHeader }}>Weekly Activity</Text>
+                <View style={styles.detailsContainer}>
+                    <View style={styles.dataContainer}>
+                        <Text style={styles.dataText}>Total Earnings: </Text>
+                        <Text style={styles.dataText}>{totalEarningPerWeek ? Object.values(totalEarningPerWeek).reduce((sum, value) => sum + value, 0) : 0}</Text>
+                    </View>
+                    <View style={styles.dataContainer}>
+                        <Text style={styles.dataText}>Total Order Completed: </Text>
+                        <Text style={styles.dataText}>{totalOrderPerWeek ? Object.values(totalOrderPerWeek).reduce((sum, value) => sum + value, 0) : 0}</Text>
+                    </View>
+
                 </View>
             </View>
         </KeyboardAvoidingView>
@@ -128,6 +261,30 @@ const styles = StyleSheet.create({
         //justifyContent: 'top',
         alignItems: 'center',
         marginTop: 20,
+    },
+    graphContainer: {
+        backgroundColor: 'maroon',
+        width: '100%',
+        height: '40%',
+        borderRadius: 20,
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    dataContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 5,
+    },
+    detailsContainer: {
+        width: '80%',
+        backgroundColor: 'white',
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#ccc',
+        backgroundColor: 'white',
+        marginTop: 20,
+        borderRadius: 12,
     },
     inputContainer: {
         width: '80%',
@@ -216,5 +373,15 @@ const styles = StyleSheet.create({
     errorText: {
         color: 'white',
         textAlign: 'center',
+    },
+    sectionHeader: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    dataText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'black',
     },
 });
