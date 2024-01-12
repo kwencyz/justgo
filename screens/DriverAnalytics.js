@@ -1,8 +1,7 @@
-import { endOfWeek, format, startOfWeek } from 'date-fns';
 import { StatusBar } from 'expo-status-bar';
-import { collection, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
@@ -11,54 +10,29 @@ export default function DriverAnalyticsScreen() {
     const auth = FIREBASE_AUTH;
     const firestore = FIRESTORE;
 
-    const [earningsData, setEarningsData] = useState([]);
+    const [earningsData, setEarningsData] = useState(null);
+    const { width: screenWidth } = useWindowDimensions();
 
     useEffect(() => {
-        // Function to fetch Earnings from Firestore
         const fetchEarnings = async () => {
             try {
+                // Assuming you have stored the user ID in auth.currentUser.uid
                 const userId = auth.currentUser.uid;
-                const userDocRef = doc(collection(firestore, 'driverwallet'), userId);
-                const userDocSnapshot = await getDoc(userDocRef);
-                console.log(userId);
 
-                if (userDocSnapshot.exists()) {
-                    const userData = userDocSnapshot.data();
+                // Fetch earnings data from Firestore
+                const orderRef = collection(firestore, 'driverwallet');
+                const querySnapshot = await getDocs(query(orderRef, where('userId', '==', userId), where('status', '==', 'earning')));
+                const orderData = querySnapshot.docs.map((doc) => doc.data());
 
-                    // Assuming 'timestamp' is the field in your data
-                    const formattedData = Object.values(userData)
-                        .map(entry => ({ timestamp: entry.timestamp, earningAmount: entry.earningAmount }))
-                        .sort((a, b) => a.timestamp - b.timestamp)
-                        .reduce((weeklyData, entry) => {
-                            const weekStart = startOfWeek(entry.timestamp.toDate());
-                            const weekEnd = endOfWeek(entry.timestamp.toDate());
-                            const weekKey = format(weekStart, 'yyyy-MM-dd');
+                setEarningsData(orderData);
 
-                            // Initialize or update the weekly earnings for the given week
-                            if (!weeklyData[weekKey]) {
-                                weeklyData[weekKey] = { date: weekKey, earningAmount: 0 };
-                            }
-
-                            weeklyData[weekKey].earningAmount += entry.earningAmount;
-
-                            return weeklyData;
-                        }, {});
-
-                    // Convert the object back to an array
-                    const finalData = Object.values(formattedData);
-
-                    setEarningsData(finalData);
-                    
-                } else {
-                    console.log('No such document!');
-                }
             } catch (error) {
-                console.error('Error fetching Earnings: ', error);
+                console.error('Error fetching earnings:', error);
             }
         };
 
-        fetchEarnings(); // Fetch Earnings when component mounts
-    }, []);
+        fetchEarnings();
+    }, [auth.currentUser.uid, firestore]);
 
     return (
         <KeyboardAvoidingView style={styles.container}>
@@ -80,37 +54,38 @@ export default function DriverAnalyticsScreen() {
                 {/* container */}
                 <View>
                     <Text>Weekly Earnings Graph</Text>
-                    <LineChart
-                        data={{
-                            labels: earningsData.map((entry) => entry.date),
-                            datasets: [
-                                {
-                                    data: earningsData.map((entry) => entry.earningAmount),
+                    {earningsData ? (
+                        <LineChart
+                            data={{
+                                labels: earningsData.map((data, index) => index.toString()),
+                                datasets: [
+                                    {
+                                        data: earningsData.map((data) => data.earningAmount),
+                                    },
+                                ],
+                            }}
+                            width={screenWidth}
+                            height={220}
+                            chartConfig={{
+                                backgroundColor: '#ffffff',
+                                backgroundGradientFrom: '#ffffff',
+                                backgroundGradientTo: '#ffffff',
+                                decimalPlaces: 2, // Adjust as needed
+                                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                                style: {
+                                    borderRadius: 16,
                                 },
-                            ],
-                        }}
-                        width={400}
-                        height={220}
-                        yAxisLabel="$"
-                        yAxisSuffix="k"
-                        chartConfig={{
-                            backgroundColor: '#e26a00',
-                            backgroundGradientFrom: '#fb8c00',
-                            backgroundGradientTo: '#ffa726',
-                            decimalPlaces: 2, // Adjust as needed based on your data
-                            color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                            style: {
-                                borderRadius: 16,
-                            },
-                            propsForDots: {
-                                r: '6',
-                                strokeWidth: '2',
-                                stroke: '#ffa726',
-                            },
-                        }}
-                        bezier
-                    />
+                                propsForDots: {
+                                    r: '6',
+                                    strokeWidth: '2',
+                                    stroke: '#ffa726',
+                                },
+                            }}
+                        />
+                    ) : (
+                        <Text>Loading...</Text>
+                    )}
                 </View>
             </View>
         </KeyboardAvoidingView>
