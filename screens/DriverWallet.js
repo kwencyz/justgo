@@ -76,6 +76,10 @@ export default function DriverWallet() {
         navigation.navigate('WithdrawWallet');
     };
 
+    const handleEarningPress = () => {
+        navigation.navigate('DriverAnalytics');
+    };
+
     const renderItem = ({ item }) => (
         <View style={styles.flatlistItem}>
             <View style={styles.transactionDetailContainer}>
@@ -87,8 +91,14 @@ export default function DriverWallet() {
                 <Text style={styles.transactionDetailText}>{item.timestamp.toDate().toLocaleTimeString()}</Text>
             </View>
             <View style={styles.transactionDetailContainer}>
-                <Text style={styles.transactionDetailText}>Withdraw Amount: </Text>
-                <Text style={styles.transactionDetailText}>RM {item.topupAmount}</Text>
+                <Text style={styles.transactionDetailText}>Amount: </Text>
+                {item.status === 'earning' ? (
+                    <>
+                        <Text style={styles.transactionDetailText}>RM {item.earningAmount}</Text>
+                    </>
+                ) : (
+                    <Text style={styles.transactionDetailText}>RM {item.withdrawAmount}</Text>
+                )}
             </View>
             <View style={styles.transactionDetailContainer}>
                 <Text style={styles.transactionDetailText}>Transaction: </Text>
@@ -143,8 +153,13 @@ export default function DriverWallet() {
                     <View style={styles.balanceContainer}>
                         <Text style={styles.balanceText}>Current Balance:</Text>
                         <Text style={styles.balanceAmount}>RM {balance}</Text>
+                        <TouchableOpacity
+                            style={styles.EarningsButton}
+                        onPress={handleEarningPress}
+                        >
+                            <Text style={styles.EarningsButtonText}>View Earnings</Text>
+                        </TouchableOpacity>
                     </View>
-
                 </View>
 
             </View>
@@ -220,7 +235,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'left',
-        marginLeft: 0,
+        marginLeft: 30,
     },
     logoImage: {
         width: 300,
@@ -237,22 +252,25 @@ const styles = StyleSheet.create({
     walletContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: 30,
+        marginLeft: 0,
+        justifyContent: 'space-between',
     },
     balanceContainer: {
-        marginRight: 100,
+        marginRight: 30,
+        marginTop: -20,
     },
     balanceText: {
         fontWeight: 'bold',
-        marginBottom: 15,
+        marginBottom: 0,
         marginTop: -5,
         color: 'white',
         fontSize: 18,
     },
     balanceAmount: {
         color: 'white',
-        fontSize: 24,
-        fontWeight: 'bold'
+        fontSize: 40,
+        fontWeight: 'bold',
+        marginLeft: 10,
     },
     title: {
         color: 'white',
@@ -302,6 +320,21 @@ const styles = StyleSheet.create({
     },
     transactionDetailText: {
         color: 'black',
+        fontSize: 18,
+        textAlign: 'center',
+    },
+    EarningsButton: {
+        width: 120,
+        height: 30,
+        marginLeft: 10,
+        marginTop: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderBottomWidth: 2,
+        borderBottomColor: 'white',
+    },
+    EarningsButtonText: {
+        color: 'white',
         fontSize: 18,
         textAlign: 'center',
     },

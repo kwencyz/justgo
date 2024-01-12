@@ -207,7 +207,7 @@ export default function DriverMenu() {
 
             const transactionRef = await addDoc(driverWalletCollectionRef, {
                 userId: userId,
-                topupAmount: selectedOrder.price,
+                earningAmount: selectedOrder.price,
                 updatedBalance: updatedWalletBalance,
                 timestamp: timestamp,
                 status: 'earning',

@@ -10,6 +10,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import Geocoder from 'react-native-geocoding';
 import AdminMenu from './screens/AdminMenu';
 import ConfirmationScreen from './screens/ConfirmationScreen';
+import DriverAnalytics from './screens/DriverAnalytics';
 import DriverHistoryScreen from './screens/DriverHistoryScreen';
 import DriverMenu from './screens/DriverMenu';
 import DriverWallet from './screens/DriverWallet';
@@ -209,6 +210,7 @@ function App() {
               <Stack.Screen name="PassengerHistoryScreen" component={PassengerHistoryScreen} options={{ headerShown: false }} />
               <Stack.Screen name="PassengerStatusScreen" component={PassengerStatusScreen} options={{ headerShown: false }} />
               <Stack.Screen name="ConfirmationScreen" component={ConfirmationScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="DriverAnalytics" component={DriverAnalytics} options={{ headerShown: false }} />
             </>
           )}
         </Stack.Navigator>
