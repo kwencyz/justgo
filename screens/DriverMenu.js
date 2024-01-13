@@ -55,7 +55,7 @@ export default function DriverMenu() {
                 <Text style={styles.orderText}>Delivery Address: {item.destination.name}</Text>
                 <Text style={styles.orderText}>Total Price: RM{item.price}</Text>
 
-                {item.status === 'pending' && (
+{/*                 {item.status === 'pending' && (
                     <TouchableOpacity style={styles.acceptButton} onPress={() => acceptOrder(item)}>
                         <Text style={styles.acceptButtonText}>Accept Order</Text>
                     </TouchableOpacity>
@@ -71,7 +71,7 @@ export default function DriverMenu() {
                     <TouchableOpacity style={styles.dropOffButton} onPress={() => dropOffPassenger(item)}>
                         <Text style={styles.dropOffButtonText}>Drop-off Passenger</Text>
                     </TouchableOpacity>
-                )}
+                )} */}
             </View>
         </TouchableOpacity>
     );
@@ -92,6 +92,14 @@ export default function DriverMenu() {
                         return true;
                     }
                     return false;
+                });
+
+                filteredOrders.sort((a, b) => {
+                    const timestampA = a.timestamp.toMillis();
+                    const timestampB = b.timestamp.toMillis();
+
+                    // Concatenate date and time as a numeric value for comparison
+                    return timestampB - timestampA;
                 });
 
                 setOrders(orderDetailsData);
@@ -319,6 +327,8 @@ export default function DriverMenu() {
                         {selectedOrder && (
                             <View style={styles.modalContent}>
                                 <Text style={styles.orderText}>Order ID: {selectedOrder.orderId}</Text>
+                                <Text style={styles.orderText}>Date: {selectedOrder.timestamp.toDate().toLocaleDateString()}</Text>
+                                <Text style={styles.orderText}>Date: {selectedOrder.timestamp.toDate().toLocaleTimeString()}</Text>
                                 <Text style={styles.orderText}>Pickup Address: {selectedOrder.origin.name}</Text>
                                 <Text style={styles.orderText}>Delivery Address: {selectedOrder.destination.name}</Text>
                                 <Text style={styles.orderText}>Distance: {selectedOrder.distance}</Text>

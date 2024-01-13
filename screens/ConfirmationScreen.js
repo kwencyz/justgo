@@ -61,12 +61,46 @@ export default function ConfirmationScreen() {
                         orderId: orderId, // Set order ID with the auto-generated ID
                     });
 
+                    // Fetch the passenger's current wallet balance
+                    const passengerDocRef = doc(firestore, 'passengerdb', auth.currentUser.uid);
+                    const passengerDocSnapshot = await getDoc(passengerDocRef);
+                    const currentWalletBalance = passengerDocSnapshot.data().wallet;
+
+                    // Subtract the order price from the current wallet balance
+                    const updatedWalletBalance = currentWalletBalance - parseFloat(price);
+
+                    // Update the wallet field in the passengerdb with the new balance
+                    await updateDoc(passengerDocRef, {
+                        wallet: updatedWalletBalance,
+                    });
+
+                    const userId = auth.currentUser.uid;
+
+                    const passengerWalletCollectionRef = collection(firestore, 'passengerwallet');
+                    const timestamp = serverTimestamp();
+
+                    const transactionRef = await addDoc(passengerWalletCollectionRef, {
+                        userId: userId,
+                        spendingAmount: parseFloat(price),
+                        updatedBalance: updatedWalletBalance,
+                        timestamp: timestamp,
+                        status: 'spending',
+                    });
+
+                    const transactionId = transactionRef.id;
+
+                    await updateDoc(doc(passengerWalletCollectionRef, transactionId), {
+                        transactionId: transactionId,
+                    });
+
+                    console.log('Transaction details uploaded successfully!', transactionId);
+
                     console.log('Order placed successfully:', orderId);
 
                     // Show a notification or navigate to a confirmation screen
                     console.log('Order Now pressed');
                     const showToast = () => {
-                        ToastAndroid.show('Payment is completed.We will notify you once a driver accepts your order', ToastAndroid.SHORT);
+                        ToastAndroid.show('Payment is completed.We will notify you once a passenger accepts your order', ToastAndroid.SHORT);
                     };
                     showToast();
                     navigateToPassengerHistoryScreen();

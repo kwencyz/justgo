@@ -28,6 +28,14 @@ export default function DriverHistoryScreen() {
                 const orderHistorySnapshots = await getDocs(orderHistoryRef);
                 const orderHistoryData = orderHistorySnapshots.docs.map((doc) => doc.data());
 
+                orderHistoryData.sort((a, b) => {
+                    const timestampA = a.timestamp.toMillis();
+                    const timestampB = b.timestamp.toMillis();
+
+                    // Concatenate date and time as a numeric value for comparison
+                    return timestampB - timestampA;
+                });
+                
                 // Filter orders based on driverId
                 const filteredPending = orderHistoryData.filter((order) => order.status === 'pending' && order.driverId === userId);
                 const filteredInProgress = orderHistoryData.filter((order) =>

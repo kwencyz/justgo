@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
@@ -53,6 +53,25 @@ export default function TopUpWallet() {
                     const userDocRef = doc(collection(firestore, 'passengerdb'), userId);
 
                     await setDoc(userDocRef, { wallet: updatedBalance }, { merge: true });
+
+                    const passengerWalletCollectionRef = collection(firestore, 'passengerwallet');
+                    const timestamp = serverTimestamp();
+
+                    const transactionRef = await addDoc(passengerWalletCollectionRef, {
+                        userId: userId,
+                        topupAmount: amount, // Assuming topUpAmount is a string, parse it to a float
+                        updatedBalance: updatedBalance,
+                        timestamp: timestamp,
+                        status: 'topup',
+                    });
+
+                    const transactionId = transactionRef.id;
+
+                    await updateDoc(doc(passengerWalletCollectionRef, transactionId), {
+                        transactionId: transactionId,
+                    });
+
+                    console.log('Transaction details uploaded successfully!', transactionId);
 
                     console.log('Wallet updated successfully!');
                     Linking.openURL('https://www.maybank2u.com.my/home/m2u/common/login.do'); // Replace 'touchngo://' with the correct scheme if available

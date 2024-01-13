@@ -194,8 +194,6 @@ export default function DriverWallet() {
                 </TouchableOpacity>
             </View>
 
-
-
         </KeyboardAvoidingView>
     );
 }

@@ -1,8 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { collection, doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
 export default function PassengerWallet() {
@@ -12,6 +12,10 @@ export default function PassengerWallet() {
   const [userData, setUserData] = useState(null);
   const auth = FIREBASE_AUTH;
   const firestore = FIRESTORE;
+
+  const [sortedData, setSortedData] = useState([]);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     // Function to fetch balance from Firestore
@@ -44,10 +48,75 @@ export default function PassengerWallet() {
 
     return () => { }; // No cleanup required for this effect
   }, []);
-  
+
+  const fetchTransactions = async () => {
+    try {
+
+      const passengerWalletCollectionRef = collection(firestore, 'passengerwallet');
+      const querySnapshot = await getDocs(passengerWalletCollectionRef);
+
+      const transactions = [];
+      querySnapshot.forEach((doc) => {
+        const transactionData = doc.data();
+
+        transactionData.id = doc.id;
+        transactions.push(transactionData);
+      });
+      const sortedTransactions = transactions.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+      setUserData(sortedTransactions);
+      setSortedData(sortedTransactions);
+
+      setUserData(transactions);
+    } catch (error) {
+      console.error('Error fetching transactions:', error.message);
+    }
+  };
+
   const handleTopUpPress = () => {
     navigation.navigate('TopUpWallet');
   };
+
+  const handleEarningPress = () => {
+    navigation.navigate('PassengerAnalytics');
+  };
+
+  const renderItem = ({ item }) => (
+    <View style={styles.flatlistItem}>
+      <View style={styles.transactionDetailContainer}>
+        <Text style={styles.transactionDetailText}>Date: </Text>
+        <Text style={styles.transactionDetailText}>{item.timestamp.toDate().toLocaleDateString()}</Text>
+      </View>
+      <View style={styles.transactionDetailContainer}>
+        <Text style={styles.transactionDetailText}>Time: </Text>
+        <Text style={styles.transactionDetailText}>{item.timestamp.toDate().toLocaleTimeString()}</Text>
+      </View>
+      <View style={styles.transactionDetailContainer}>
+        <Text style={styles.transactionDetailText}>Amount: </Text>
+        {item.status === 'spending' ? (
+          <>
+            <Text style={styles.transactionDetailText}>RM {item.spendingAmount}</Text>
+          </>
+        ) : (
+          <Text style={styles.transactionDetailText}>RM {item.topupAmount}</Text>
+        )}
+      </View>
+      <View style={styles.transactionDetailContainer}>
+        <Text style={styles.transactionDetailText}>Transaction: </Text>
+        <Text style={styles.transactionDetailText}>{item.status.toUpperCase()}</Text>
+      </View>
+
+    </View>
+  );
+
+  const refreshTransactions = async () => {
+    setIsRefreshing(true);
+    await fetchTransactions();
+    setIsRefreshing(false);
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
   return (
     <KeyboardAvoidingView style={styles.container}>
@@ -84,21 +153,47 @@ export default function PassengerWallet() {
           <View style={styles.balanceContainer}>
             <Text style={styles.balanceText}>Current Balance:</Text>
             <Text style={styles.balanceAmount}>RM {balance}</Text>
+            <TouchableOpacity
+              style={styles.EarningsButton}
+              onPress={handleEarningPress}
+            >
+              <Text style={styles.EarningsButtonText}>View Spending</Text>
+            </TouchableOpacity>
           </View>
 
         </View>
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.TopUpButton}
-            onPress={handleTopUpPress}
-          >
-            <Text style={styles.TopUpButtonText}>Top Up Now</Text>
-          </TouchableOpacity>
-        </View>
-
       </View>
 
+      <View>
+        <Text style={{ marginLeft: 20, ...styles.balanceText }}>Transaction History:</Text>
+        <FlatList
+          style={styles.flatListContainer}
+          data={sortedData}
+          keyExtractor={(transaction) => transaction.id}
+          renderItem={renderItem}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={refreshTransactions}
+              colors={['red', 'maroon']}
+              progressBackgroundColor="white"
+              tintColor="maroon"
+              size="large"
+              title="Refreshing"
+              titleColor="black"
+            />
+          }
+        />
+      </View>
+
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.TopUpButton}
+          onPress={handleTopUpPress}
+        >
+          <Text style={styles.TopUpButtonText}>Topup Wallet</Text>
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -138,39 +233,42 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'left',
-    marginLeft: 0,
+    marginLeft: 30,
   },
   logoImage: {
     width: 300,
     height: 300,
   },
   formContainer: {
-    flex: 1 / 4,
-    //justifyContent: 'top',
+    height: 170,
     alignItems: 'left',
-    marginTop: 0,
     backgroundColor: 'maroon',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
+    marginBottom: 10,
   },
   walletContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 20,
+    marginLeft: 0,
+    justifyContent: 'space-between',
   },
   balanceContainer: {
-    marginRight: 100,
+    marginRight: 30,
+    marginTop: -20,
   },
   balanceText: {
-    marginBottom: 15,
+    fontWeight: 'bold',
+    marginBottom: 0,
     marginTop: -5,
     color: 'white',
     fontSize: 18,
   },
   balanceAmount: {
     color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold'
+    fontSize: 40,
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
   title: {
     color: 'white',
@@ -182,20 +280,59 @@ const styles = StyleSheet.create({
   buttonContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 420, // Adjust this value as needed for spacing
+    marginTop: 0, // Adjust this value as needed for spacing
   },
   TopUpButton: {
-    backgroundColor: 'white',
+    backgroundColor: 'maroon',
     padding: 5,
     borderRadius: 20,
-    marginTop: 150,
+    marginTop: 0,
     width: '80%',
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },
   TopUpButtonText: {
-    color: 'maroon',
+    color: 'white',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  flatListContainer: {
+    width: '90%',
+    height: '46%',
+    marginLeft: 20,
+    marginBottom: 10,
+  },
+  flatlistItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    backgroundColor: 'white',
+    marginBottom: 10,
+    borderRadius: 12,
+  },
+  transactionDetailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  transactionDetailText: {
+    color: 'black',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  EarningsButton: {
+    width: 120,
+    height: 30,
+    marginLeft: 10,
+    marginTop: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'white',
+  },
+  EarningsButtonText: {
+    color: 'white',
     fontSize: 18,
     textAlign: 'center',
   },

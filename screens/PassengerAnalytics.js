@@ -5,12 +5,12 @@ import { Image, KeyboardAvoidingView, StyleSheet, Text, View, useWindowDimension
 import { LineChart } from 'react-native-chart-kit';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
-export default function DriverAnalyticsScreen() {
+export default function PassengerAnalyticsScreen() {
 
     const auth = FIREBASE_AUTH;
     const firestore = FIRESTORE;
 
-    const [totalEarningsByDay, setTotalEarningsByDay] = useState(null);
+    const [totalSpendByDay, setTotalSpendByDay] = useState(null);
 
     const { width: screenWidth } = useWindowDimensions();
 
@@ -21,14 +21,14 @@ export default function DriverAnalyticsScreen() {
         return `${day}/${month}`;
     };
 
-    const calculateTotalEarningsByDay = async (userId, days = 5) => {
+    const calculateTotalSpendByDay = async (userId, days = 5) => {
         try {
-            // Fetch earnings data from Firestore
-            const orderRef = collection(firestore, 'driverwallet');
+            // Fetch spending data from Firestore (replace 'driverwallet' with your actual collection name)
+            const orderRef = collection(firestore, 'passengerwallet');
             const q = query(
                 orderRef,
                 where('userId', '==', userId),
-                where('status', '==', 'earning'),
+                where('status', '==', 'spending'),
                 orderBy('timestamp', 'desc'),
                 limit(days)
             );
@@ -36,46 +36,48 @@ export default function DriverAnalyticsScreen() {
             const orderData = querySnapshot.docs.map((doc) => doc.data());
 
             // Organize data by day
-            const earningsByDay = orderData.reduce((acc, data) => {
+            const spendByDay = orderData.reduce((acc, data) => {
                 const timestamp = data.timestamp.toDate(); // Assuming 'timestamp' is a Firestore timestamp
                 const dayKey = getDayKey(timestamp);
-                acc[dayKey] = (acc[dayKey] || 0) + data.earningAmount;
+                acc[dayKey] = (acc[dayKey] || 0) + data.spendingAmount; // Replace with your actual spending amount field
                 return acc;
             }, {});
 
-            return earningsByDay;
+            return spendByDay;
         } catch (error) {
-            console.error('Error calculating total earnings by day:', error);
+            console.error('Error calculating total spend by day:', error);
             return null;
         }
     };
 
     useEffect(() => {
-        const fetchTotalEarningsByDay = async () => {
+        const fetchTotalSpendByDay = async () => {
             try {
                 const userId = auth.currentUser.uid;
-                const totalEarnings = await calculateTotalEarningsByDay(userId, 5); // Fetch data for the last 5 days
+                const totalSpend = await calculateTotalSpendByDay(userId, 5); // Fetch data for the last 5 days
 
-                // Ensure that totalEarningsByDay starts from zero
+                // Ensure that totalSpendByDay starts from zero
                 const startDate = new Date();
                 startDate.setDate(startDate.getDate() - 4); // Assuming you want data for the last 5 days
-                const labels = Array.from({ length: 5 }, (_, index) => getDayKey(new Date(startDate.setDate(startDate.getDate() + 1))));
+                const labels = Array.from({ length: 5 }, (_, index) =>
+                    getDayKey(new Date(startDate.setDate(startDate.getDate() + 1)))
+                );
 
-                const paddedEarnings = labels.map((label) => totalEarnings[label] || 0);
+                const paddedSpend = labels.map((label) => totalSpend[label] || 0);
 
-                setTotalEarningsByDay({
+                setTotalSpendByDay({
                     labels,
-                    data: paddedEarnings,
+                    data: paddedSpend,
                 });
             } catch (error) {
-                console.error('Error fetching total earnings by day:', error);
+                console.error('Error fetching total spend by day:', error);
             }
         };
 
-        fetchTotalEarningsByDay();
+        fetchTotalSpendByDay();
     }, [auth.currentUser.uid, firestore]);
 
-    const [totalEarningPerWeek, setTotalEarningPerWeek] = useState(null);
+    const [totalSpendingPerWeek, setTotalSpendingPerWeek] = useState(null);
     const [totalOrderPerWeek, setTotalOrderPerWeek] = useState(null);
 
     const calculateWeeklyOrders = async (userId, days = 7) => {
@@ -84,7 +86,7 @@ export default function DriverAnalyticsScreen() {
             const orderRef = collection(firestore, 'orderdetailsdb');
             const q = query(
                 orderRef,
-                where('driverId', '==', userId),
+                where('passengerId', '==', userId),
                 orderBy('timestamp', 'desc'),
                 limit(days)
             );
@@ -108,33 +110,33 @@ export default function DriverAnalyticsScreen() {
         }
     };
 
-    const calculateWeeklyEarnings = async (userId, days = 7) => {
+    const calculateWeeklySpending = async (userId, days = 7) => {
         try {
-            // Fetch data from Firestore
-            const walletRef = collection(firestore, 'driverwallet');
+            // Fetch data from Firestore (replace 'passengerwallet' with your actual collection name)
+            const walletRef = collection(firestore, 'passengerwallet');
             const q = query(
                 walletRef,
                 where('userId', '==', userId),
-                where('status', '==', 'earning'),
+                where('status', '==', 'spending'), // Filter by spending status
                 orderBy('timestamp', 'desc'),
                 limit(days)
             );
             const querySnapshot = await getDocs(q);
             const walletData = querySnapshot.docs.map((doc) => doc.data());
 
-            // Organize data by day and calculate total earnings
+            // Organize data by day and calculate total spending
             const totalsByDay = walletData.reduce((acc, data) => {
                 const timestamp = data.timestamp.toDate();
                 const dayKey = getDayKey(timestamp);
-                const earningAmount = data.earningAmount || 0;
+                const spendingAmount = data.spendingAmount || 0; // Replace with your actual spending amount field
 
-                acc[dayKey] = (acc[dayKey] || 0) + earningAmount;
+                acc[dayKey] = (acc[dayKey] || 0) + spendingAmount;
                 return acc;
             }, {});
 
             return totalsByDay;
         } catch (error) {
-            console.error('Error calculating weekly earnings:', error);
+            console.error('Error calculating weekly spending:', error);
             return null;
         }
     };
@@ -145,8 +147,8 @@ export default function DriverAnalyticsScreen() {
                 const userId = auth.currentUser.uid;
 
                 // Calculate weekly earnings
-                const weeklyEarnings = await calculateWeeklyEarnings(userId, 7);
-                setTotalEarningPerWeek(weeklyEarnings);
+                const weeklySpendings = await calculateWeeklySpending(userId, 7);
+                setTotalSpendingPerWeek(weeklySpendings);
 
                 // Calculate total orders (you can replace this with your own function)
                 const weeklyOrders = await calculateWeeklyOrders(userId, 7);
@@ -179,13 +181,13 @@ export default function DriverAnalyticsScreen() {
                 {/* container */}
                 <View style={styles.graphContainer}>
                     <Text style={{ marginTop: 10, marginBottom: 10, ...styles.sectionHeader }}>Daily Earnings Graph</Text>
-                    {totalEarningsByDay ? (
+                    {totalSpendByDay ? (
                         <LineChart
                             data={{
-                                labels: totalEarningsByDay.labels,
+                                labels: totalSpendByDay.labels,
                                 datasets: [
                                     {
-                                        data: totalEarningsByDay.data,
+                                        data: totalSpendByDay.data,
                                     },
                                 ],
                             }}
@@ -211,11 +213,11 @@ export default function DriverAnalyticsScreen() {
                 <Text style={{ marginTop: 20, ...styles.sectionHeader }}>Weekly Activity</Text>
                 <View style={styles.detailsContainer}>
                     <View style={styles.dataContainer}>
-                        <Text style={styles.dataText}>Total Earnings: </Text>
-                        <Text style={styles.dataText}>RM {totalEarningPerWeek ? Object.values(totalEarningPerWeek).reduce((sum, value) => sum + value, 0) : 0}</Text>
+                        <Text style={styles.dataText}>Total Spending: </Text>
+                        <Text style={styles.dataText}>RM {totalSpendingPerWeek ? Object.values(totalSpendingPerWeek).reduce((sum, value) => sum + value, 0) : 0}</Text>
                     </View>
                     <View style={styles.dataContainer}>
-                        <Text style={styles.dataText}>Total Order Completed: </Text>
+                        <Text style={styles.dataText}>Total Order: </Text>
                         <Text style={styles.dataText}>{totalOrderPerWeek ? Object.values(totalOrderPerWeek).reduce((sum, value) => sum + value, 0) : 0}</Text>
                     </View>
 

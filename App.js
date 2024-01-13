@@ -16,6 +16,7 @@ import DriverMenu from './screens/DriverMenu';
 import DriverWallet from './screens/DriverWallet';
 import ForgetPassword from './screens/ForgetPassword';
 import LoginScreen from './screens/LoginScreen';
+import PassengerAnalytics from './screens/PassengerAnalytics';
 import PassengerHistoryScreen from './screens/PassengerHistoryScreen';
 import PassengerMenu from './screens/PassengerMenu';
 import PassengerStatusScreen from './screens/PassengerStatusScreen';
@@ -211,6 +212,7 @@ function App() {
               <Stack.Screen name="PassengerStatusScreen" component={PassengerStatusScreen} options={{ headerShown: false }} />
               <Stack.Screen name="ConfirmationScreen" component={ConfirmationScreen} options={{ headerShown: false }} />
               <Stack.Screen name="DriverAnalytics" component={DriverAnalytics} options={{ headerShown: false }} />
+              <Stack.Screen name="PassengerAnalytics" component={PassengerAnalytics} options={{ headerShown: false }} />
             </>
           )}
         </Stack.Navigator>
