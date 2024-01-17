@@ -35,6 +35,30 @@ export default function PassengerHistoryScreen() {
           (order.status === 'in-progress' && order.passengerId === userId)
         );
         const filteredCompleted = orderHistoryData.filter((order) => order.status === 'completed' && order.passengerId === userId);
+        
+        filteredPending.sort((a, b) => {
+          const timestampA = a.timestamp.toMillis();
+          const timestampB = b.timestamp.toMillis();
+
+          // Concatenate date and time as a numeric value for comparison
+          return timestampB - timestampA;
+        });
+
+        filteredInProgress.sort((a, b) => {
+          const timestampA = a.timestamp.toMillis();
+          const timestampB = b.timestamp.toMillis();
+
+          // Concatenate date and time as a numeric value for comparison
+          return timestampB - timestampA;
+        });
+
+        filteredCompleted.sort((a, b) => {
+          const timestampA = a.timestamp.toMillis();
+          const timestampB = b.timestamp.toMillis();
+
+          // Concatenate date and time as a numeric value for comparison
+          return timestampB - timestampA;
+        });
 
         // Set the order history and orders in state
         setOrderHistory(orderHistoryData);
@@ -47,7 +71,14 @@ export default function PassengerHistoryScreen() {
     };
 
     fetchOrderHistory();
-  }, [auth.currentUser.uid, firestore]);
+
+    // Set interval to fetch every 2 seconds
+    const intervalId = setInterval(fetchOrderHistory, 2000);
+
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
+
+  }, [auth.currentUser.uid, firestore, setOrderHistory, setPendingOrders, setInProgressOrders, setCompletedOrders]);
 
   const renderOrderItem = ({ item }) => {
     // Assuming 'timestamp' is the field containing the Firestore Timestamp

@@ -180,7 +180,7 @@ export default function PassengerAnalyticsScreen() {
             <View style={styles.formContainer}>
                 {/* container */}
                 <View style={styles.graphContainer}>
-                    <Text style={{ marginTop: 10, marginBottom: 10, ...styles.sectionHeader }}>Daily Earnings Graph</Text>
+                    <Text style={{ marginTop: 10, marginBottom: 10, ...styles.sectionHeader }}>Daily Spending Graph</Text>
                     {totalSpendByDay ? (
                         <LineChart
                             data={{

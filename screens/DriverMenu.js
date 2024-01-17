@@ -48,30 +48,23 @@ export default function DriverMenu() {
         setModalVisible(!modalVisible);
     };
 
+    const shouldDisplayNewLabel = (selectedOrder) => {
+        const orderTime = new Date(selectedOrder.timestamp.toMillis());
+        const currentTime = new Date();
+
+        // Calculate the time difference in minutes
+        const timeDifference = Math.abs((currentTime - orderTime) / (1000 * 60));
+
+        return timeDifference <= 2;
+    };
+
     const renderItem = ({ item }) => (
         <TouchableOpacity style={styles.FlatViewButton} onPress={() => toggleModal(item)}>
             <View style={styles.orderItem}>
+                {shouldDisplayNewLabel(item) && <Text style={styles.newOrderLabel}>New Order</Text>}
                 <Text style={styles.orderText}>Pickup Address: {item.origin.name}</Text>
                 <Text style={styles.orderText}>Delivery Address: {item.destination.name}</Text>
                 <Text style={styles.orderText}>Total Price: RM{item.price}</Text>
-
-{/*                 {item.status === 'pending' && (
-                    <TouchableOpacity style={styles.acceptButton} onPress={() => acceptOrder(item)}>
-                        <Text style={styles.acceptButtonText}>Accept Order</Text>
-                    </TouchableOpacity>
-                )}
-
-                {item.status === 'accepted' && (
-                    <TouchableOpacity style={styles.pickupButton} onPress={() => pickupPassenger(item)}>
-                        <Text style={styles.pickupButtonText}>Pickup</Text>
-                    </TouchableOpacity>
-                )}
-
-                {item.status === 'in-progress' && (
-                    <TouchableOpacity style={styles.dropOffButton} onPress={() => dropOffPassenger(item)}>
-                        <Text style={styles.dropOffButtonText}>Drop-off Passenger</Text>
-                    </TouchableOpacity>
-                )} */}
             </View>
         </TouchableOpacity>
     );
@@ -110,7 +103,20 @@ export default function DriverMenu() {
         };
 
         fetchOrders();
-    }, [auth.currentUser.uid, firestore, selectedStatus]);
+        // Set interval to fetch orders every 2 seconds
+        const intervalId = setInterval(() => {
+            setIsRefreshing((prevIsRefreshing) => {
+                if (!prevIsRefreshing) {
+                    fetchOrders();
+                }
+                return prevIsRefreshing;
+            });
+        }, 2000);
+
+        // Clear the interval on component unmount
+        return () => clearInterval(intervalId);
+
+    }, [auth.currentUser.uid, firestore, selectedStatus, isRefreshing]);
 
     const refreshOrders = async () => {
         try {
@@ -127,6 +133,14 @@ export default function DriverMenu() {
                     return true;
                 }
                 return false;
+            });
+
+            filteredOrders.sort((a, b) => {
+                const timestampA = a.timestamp.toMillis();
+                const timestampB = b.timestamp.toMillis();
+
+                // Concatenate date and time as a numeric value for comparison
+                return timestampB - timestampA;
             });
 
             setOrders(orderDetailsData);
@@ -328,7 +342,7 @@ export default function DriverMenu() {
                             <View style={styles.modalContent}>
                                 <Text style={styles.orderText}>Order ID: {selectedOrder.orderId}</Text>
                                 <Text style={styles.orderText}>Date: {selectedOrder.timestamp.toDate().toLocaleDateString()}</Text>
-                                <Text style={styles.orderText}>Date: {selectedOrder.timestamp.toDate().toLocaleTimeString()}</Text>
+                                <Text style={styles.orderText}>Time: {selectedOrder.timestamp.toDate().toLocaleTimeString()}</Text>
                                 <Text style={styles.orderText}>Pickup Address: {selectedOrder.origin.name}</Text>
                                 <Text style={styles.orderText}>Delivery Address: {selectedOrder.destination.name}</Text>
                                 <Text style={styles.orderText}>Distance: {selectedOrder.distance}</Text>
@@ -558,5 +572,11 @@ const styles = StyleSheet.create({
         flex: 1,
         marginTop: 10,
         width: '90%',
+    },
+    newOrderLabel: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: 'red', // Customize the color as needed
+        marginBottom: 8, // Add spacing between the label and other details
     },
 });

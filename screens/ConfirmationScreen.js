@@ -61,19 +61,6 @@ export default function ConfirmationScreen() {
                         orderId: orderId, // Set order ID with the auto-generated ID
                     });
 
-                    // Fetch the passenger's current wallet balance
-                    const passengerDocRef = doc(firestore, 'passengerdb', auth.currentUser.uid);
-                    const passengerDocSnapshot = await getDoc(passengerDocRef);
-                    const currentWalletBalance = passengerDocSnapshot.data().wallet;
-
-                    // Subtract the order price from the current wallet balance
-                    const updatedWalletBalance = currentWalletBalance - parseFloat(price);
-
-                    // Update the wallet field in the passengerdb with the new balance
-                    await updateDoc(passengerDocRef, {
-                        wallet: updatedWalletBalance,
-                    });
-
                     const userId = auth.currentUser.uid;
 
                     const passengerWalletCollectionRef = collection(firestore, 'passengerwallet');
@@ -82,7 +69,7 @@ export default function ConfirmationScreen() {
                     const transactionRef = await addDoc(passengerWalletCollectionRef, {
                         userId: userId,
                         spendingAmount: parseFloat(price),
-                        updatedBalance: updatedWalletBalance,
+                        updatedBalance: newWalletBalance,
                         timestamp: timestamp,
                         status: 'spending',
                     });
