@@ -73,7 +73,7 @@ export default function PassengerHistoryScreen() {
     fetchOrderHistory();
 
     // Set interval to fetch every 2 seconds
-    const intervalId = setInterval(fetchOrderHistory, 2000);
+    const intervalId = setInterval(fetchOrderHistory, 5000);
 
     // Clean up the interval on component unmount
     return () => clearInterval(intervalId);

@@ -75,6 +75,12 @@ export default function PassengerAnalyticsScreen() {
         };
 
         fetchTotalSpendByDay();
+
+        // Set interval to fetch total earnings by day every 2 seconds
+        const intervalId = setInterval(fetchTotalSpendByDay, 5000);
+
+        // Clear the interval on component unmount
+        return () => clearInterval(intervalId);
     }, [auth.currentUser.uid, firestore]);
 
     const [totalSpendingPerWeek, setTotalSpendingPerWeek] = useState(null);

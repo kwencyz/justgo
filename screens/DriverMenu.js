@@ -111,7 +111,7 @@ export default function DriverMenu() {
                 }
                 return prevIsRefreshing;
             });
-        }, 2000);
+        }, 5000);
 
         // Clear the interval on component unmount
         return () => clearInterval(intervalId);

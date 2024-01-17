@@ -75,11 +75,11 @@ export default function DriverAnalyticsScreen() {
         fetchTotalEarningsByDay();
 
         // Set interval to fetch total earnings by day every 2 seconds
-        const intervalId = setInterval(fetchTotalEarningsByDay, 2000);
+        const intervalId = setInterval(fetchTotalEarningsByDay, 5000);
 
         // Clear the interval on component unmount
         return () => clearInterval(intervalId);
-        
+
     }, [auth.currentUser.uid, firestore]);
 
     const [totalEarningPerWeek, setTotalEarningPerWeek] = useState(null);

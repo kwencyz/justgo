@@ -39,7 +39,7 @@ export default function DriverWallet() {
             fetchBalance(); // Fetch balance initially
             refreshTransactions();
 
-            const intervalId = setInterval(fetchBalance, 2000);
+            const intervalId = setInterval(fetchBalance, 5000);
 
             return () => clearInterval(intervalId); // Clean up interval on unmount
         };
