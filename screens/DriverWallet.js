@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
@@ -35,7 +35,6 @@ export default function DriverWallet() {
             }
         };
 
-        /*refresh
         const refreshBalance = () => {
             fetchBalance(); // Fetch balance initially
             refreshTransactions();
@@ -46,16 +45,16 @@ export default function DriverWallet() {
         };
 
         refreshBalance(); // Call the refresh function when component mounts
-        */
 
         return () => { }; // No cleanup required for this effect
     }, []);
 
     const fetchTransactions = async () => {
         try {
+            const userId = auth.currentUser.uid; // Assuming you have access to the current user's ID
 
             const driverWalletCollectionRef = collection(firestore, 'driverwallet');
-            const querySnapshot = await getDocs(driverWalletCollectionRef);
+            const querySnapshot = await getDocs(query(driverWalletCollectionRef, where('userId', '==', userId)));
 
             const transactions = [];
             querySnapshot.forEach((doc) => {
@@ -64,11 +63,11 @@ export default function DriverWallet() {
                 transactionData.id = doc.id;
                 transactions.push(transactionData);
             });
+
             const sortedTransactions = transactions.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+
             setUserData(sortedTransactions);
             setSortedData(sortedTransactions);
-
-            setUserData(transactions);
         } catch (error) {
             console.error('Error fetching transactions:', error.message);
         }
@@ -157,7 +156,7 @@ export default function DriverWallet() {
                         <Text style={styles.balanceAmount}>RM {balance}</Text>
                         <TouchableOpacity
                             style={styles.EarningsButton}
-                        onPress={handleEarningPress}
+                            onPress={handleEarningPress}
                         >
                             <Text style={styles.EarningsButtonText}>View Earnings</Text>
                         </TouchableOpacity>

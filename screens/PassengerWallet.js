@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
@@ -51,9 +51,10 @@ export default function PassengerWallet() {
 
   const fetchTransactions = async () => {
     try {
+      const userId = auth.currentUser.uid; // Assuming you have access to the current user's ID
 
       const passengerWalletCollectionRef = collection(firestore, 'passengerwallet');
-      const querySnapshot = await getDocs(passengerWalletCollectionRef);
+      const querySnapshot = await getDocs(query(passengerWalletCollectionRef, where('userId', '==', userId)));
 
       const transactions = [];
       querySnapshot.forEach((doc) => {
@@ -62,11 +63,11 @@ export default function PassengerWallet() {
         transactionData.id = doc.id;
         transactions.push(transactionData);
       });
+
       const sortedTransactions = transactions.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+
       setUserData(sortedTransactions);
       setSortedData(sortedTransactions);
-
-      setUserData(transactions);
     } catch (error) {
       console.error('Error fetching transactions:', error.message);
     }

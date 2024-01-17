@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
@@ -11,6 +11,7 @@ export default function PassengerAnalyticsScreen() {
     const firestore = FIRESTORE;
 
     const [totalSpendByDay, setTotalSpendByDay] = useState(null);
+    const [selectedStatus, setSelectedStatus] = useState('daily');
 
     const { width: screenWidth } = useWindowDimensions();
 
@@ -21,9 +22,16 @@ export default function PassengerAnalyticsScreen() {
         return `${day}/${month}`;
     };
 
+    const getMonthKey = (date) => {
+        const currentDate = new Date(date);
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Month is zero-based
+        return `${year}-${month}`;
+    };
+
     const calculateTotalSpendByDay = async (userId, days = 5) => {
         try {
-            // Fetch spending data from Firestore (replace 'driverwallet' with your actual collection name)
+            // Fetch spending data from Firestore (replace 'passengerwallet' with your actual collection name)
             const orderRef = collection(firestore, 'passengerwallet');
             const q = query(
                 orderRef,
@@ -76,11 +84,95 @@ export default function PassengerAnalyticsScreen() {
 
         fetchTotalSpendByDay();
 
-        // Set interval to fetch total earnings by day every 2 seconds
+        // Set interval to fetch total Spendings by day every 2 seconds
         const intervalId = setInterval(fetchTotalSpendByDay, 5000);
 
         // Clear the interval on component unmount
         return () => clearInterval(intervalId);
+    }, [auth.currentUser.uid, firestore]);
+
+    const [totalSpendingPerDay, setTotalSpendingPerDay] = useState(null);
+    const [totalOrderPerDay, setTotalOrderPerDay] = useState(null);
+
+    const calculateDailyOrders = async (userId, days = 1) => {
+        try {
+            // Fetch data from Firestore
+            const orderRef = collection(firestore, 'orderdetailsdb');
+            const q = query(
+                orderRef,
+                where('passengerId', '==', userId),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const orderData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by day
+            const completedOrdersByDay = orderData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate();
+                const dayKey = getDayKey(timestamp);
+                if (data.status === 'completed') {
+                    acc[dayKey] = (acc[dayKey] || 0) + 1;
+                }
+                return acc;
+            }, {});
+
+            return completedOrdersByDay;
+        } catch (error) {
+            console.error('Error calculating daily completed orders:', error);
+            return null;
+        }
+    };
+
+    const calculateDailySpendings = async (userId, days = 1) => {
+        try {
+            // Fetch data from Firestore
+            const walletRef = collection(firestore, 'passengerwallet');
+            const q = query(
+                walletRef,
+                where('userId', '==', userId),
+                where('status', '==', 'spending'),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const walletData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by day and calculate total Spendings
+            const totalsByDay = walletData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate();
+                const dayKey = getDayKey(timestamp);
+                const spendingAmount = data.spendingAmount || 0;
+
+                acc[dayKey] = (acc[dayKey] || 0) + spendingAmount;
+                return acc;
+            }, {});
+
+            return totalsByDay;
+        } catch (error) {
+            console.error('Error calculating daily spendings:', error);
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        const fetchDailyData = async () => {
+            try {
+                const userId = auth.currentUser.uid;
+
+                // Calculate daily Spendings
+                const dailySpendings = await calculateDailySpendings(userId, 1);
+                setTotalSpendingPerDay(dailySpendings);
+
+                // Calculate daily orders
+                const dailyOrders = await calculateDailyOrders(userId, 1);
+                setTotalOrderPerDay(dailyOrders);
+            } catch (error) {
+                console.error('Error fetching daily data:', error);
+            }
+        };
+
+        fetchDailyData();
     }, [auth.currentUser.uid, firestore]);
 
     const [totalSpendingPerWeek, setTotalSpendingPerWeek] = useState(null);
@@ -116,25 +208,25 @@ export default function PassengerAnalyticsScreen() {
         }
     };
 
-    const calculateWeeklySpending = async (userId, days = 7) => {
+    const calculateWeeklySpendings = async (userId, days = 7) => {
         try {
-            // Fetch data from Firestore (replace 'passengerwallet' with your actual collection name)
+            // Fetch data from Firestore
             const walletRef = collection(firestore, 'passengerwallet');
             const q = query(
                 walletRef,
                 where('userId', '==', userId),
-                where('status', '==', 'spending'), // Filter by spending status
+                where('status', '==', 'spending'),
                 orderBy('timestamp', 'desc'),
                 limit(days)
             );
             const querySnapshot = await getDocs(q);
             const walletData = querySnapshot.docs.map((doc) => doc.data());
 
-            // Organize data by day and calculate total spending
+            // Organize data by day and calculate total Spendings
             const totalsByDay = walletData.reduce((acc, data) => {
                 const timestamp = data.timestamp.toDate();
                 const dayKey = getDayKey(timestamp);
-                const spendingAmount = data.spendingAmount || 0; // Replace with your actual spending amount field
+                const spendingAmount = data.spendingAmount || 0;
 
                 acc[dayKey] = (acc[dayKey] || 0) + spendingAmount;
                 return acc;
@@ -142,7 +234,7 @@ export default function PassengerAnalyticsScreen() {
 
             return totalsByDay;
         } catch (error) {
-            console.error('Error calculating weekly spending:', error);
+            console.error('Error calculating weekly spendings:', error);
             return null;
         }
     };
@@ -152,8 +244,8 @@ export default function PassengerAnalyticsScreen() {
             try {
                 const userId = auth.currentUser.uid;
 
-                // Calculate weekly earnings
-                const weeklySpendings = await calculateWeeklySpending(userId, 7);
+                // Calculate weekly spendings
+                const weeklySpendings = await calculateWeeklySpendings(userId, 7);
                 setTotalSpendingPerWeek(weeklySpendings);
 
                 // Calculate total orders (you can replace this with your own function)
@@ -165,6 +257,90 @@ export default function PassengerAnalyticsScreen() {
         };
 
         fetchWeeklyData();
+    }, [auth.currentUser.uid, firestore]);
+
+    const [totalSpendingPerMonth, setTotalSpendingPerMonth] = useState(null);
+    const [totalOrderPerMonth, setTotalOrderPerMonth] = useState(null);
+
+    const calculateMonthlyOrders = async (userId, days = 30) => {
+        try {
+            // Fetch data from Firestore
+            const orderRef = collection(firestore, 'orderdetailsdb');
+            const q = query(
+                orderRef,
+                where('passengerId', '==', userId),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const orderData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by day
+            const completedOrdersByDay = orderData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate();
+                const monthKey = getMonthKey(timestamp);
+                if (data.status === 'completed') {
+                    acc[monthKey] = (acc[monthKey] || 0) + 1;
+                }
+                return acc;
+            }, {});
+
+            return completedOrdersByDay;
+        } catch (error) {
+            console.error('Error calculating monthly completed orders:', error);
+            return null;
+        }
+    };
+
+    const calculateMonthlySpendings = async (userId, days = 30) => {
+        try {
+            // Fetch data from Firestore
+            const walletRef = collection(firestore, 'passengerwallet');
+            const q = query(
+                walletRef,
+                where('userId', '==', userId),
+                where('status', '==', 'spending'),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const walletData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by month and calculate total spendings
+            const totalsByMonth = walletData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate();
+                const monthKey = getMonthKey(timestamp);
+                const spendingAmount = data.spendingAmount || 0;
+
+                acc[monthKey] = (acc[monthKey] || 0) + spendingAmount;
+                return acc;
+            }, {});
+
+            return totalsByMonth;
+        } catch (error) {
+            console.error('Error calculating monthly spendings:', error);
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        const fetchMonthlyData = async () => {
+            try {
+                const userId = auth.currentUser.uid;
+
+                // Calculate monthly spendings
+                const monthlySpendings = await calculateMonthlySpendings(userId, 30);
+                setTotalSpendingPerMonth(monthlySpendings);
+
+                // Calculate total orders (you can replace this with your own function)
+                const monthlyOrders = await calculateMonthlyOrders(userId, 30);
+                setTotalOrderPerMonth(monthlyOrders);
+            } catch (error) {
+                console.error('Error fetching monthly data:', error);
+            }
+        };
+
+        fetchMonthlyData();
     }, [auth.currentUser.uid, firestore]);
 
     return (
@@ -216,17 +392,52 @@ export default function PassengerAnalyticsScreen() {
                         <Text>Loading...</Text>
                     )}
                 </View>
-                <Text style={{ marginTop: 20, ...styles.sectionHeader }}>Weekly Activity</Text>
+                <View style={styles.filterButtonsContainer}>
+                    <TouchableOpacity
+                        style={[styles.filterButton, selectedStatus === 'daily' && styles.selectedFilterButton]}
+                        onPress={() => setSelectedStatus('daily')}
+                    >
+                        <Text style={styles.filterButtonsText}>Daily</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.filterButton, selectedStatus === 'weekly' && styles.selectedFilterButton]}
+                        onPress={() => setSelectedStatus('weekly')}
+                    >
+                        <Text style={styles.filterButtonsText}>Weekly</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.filterButton, selectedStatus === 'monthly' && styles.selectedFilterButton]}
+                        onPress={() => setSelectedStatus('monthly')}
+                    >
+                        <Text style={styles.filterButtonsText}>Monthly</Text>
+                    </TouchableOpacity>
+                </View>
+                <Text style={{ marginTop: 10, marginBottom: 10, ...styles.sectionHeader }}>Your
+                    {selectedStatus === 'daily' && ' Daily'}
+                    {selectedStatus === 'weekly' && ' Weekly'}
+                    {selectedStatus === 'monthly' && ' Monthly'} Activity
+                </Text>
                 <View style={styles.detailsContainer}>
                     <View style={styles.dataContainer}>
-                        <Text style={styles.dataText}>Total Spending: </Text>
-                        <Text style={styles.dataText}>RM {totalSpendingPerWeek ? Object.values(totalSpendingPerWeek).reduce((sum, value) => sum + value, 0) : 0}</Text>
+                        <Text style={styles.dataText}>Total Spendings: </Text>
+                        <Text style={styles.dataText}>
+                            RM {selectedStatus === 'daily' ? (totalSpendingPerDay ? Object.values(totalSpendingPerDay).reduce((sum, value) => sum + value, 0) : 0) :
+                                selectedStatus === 'weekly' ? (totalSpendingPerWeek ? Object.values(totalSpendingPerWeek).reduce((sum, value) => sum + value, 0) : 0) :
+                                    (totalSpendingPerMonth ? Object.values(totalSpendingPerMonth).reduce((sum, value) => sum + value, 0) : 0)
+                            }
+                        </Text>
                     </View>
                     <View style={styles.dataContainer}>
-                        <Text style={styles.dataText}>Total Order: </Text>
-                        <Text style={styles.dataText}>{totalOrderPerWeek ? Object.values(totalOrderPerWeek).reduce((sum, value) => sum + value, 0) : 0}</Text>
+                        <Text style={styles.dataText}>Total Order Completed: </Text>
+                        <Text style={styles.dataText}>
+                            {selectedStatus === 'daily' ? (totalOrderPerDay ? Object.values(totalOrderPerDay).reduce((sum, value) => sum + value, 0) : 0) :
+                                selectedStatus === 'weekly' ? (totalOrderPerWeek ? Object.values(totalOrderPerWeek).reduce((sum, value) => sum + value, 0) : 0) :
+                                    (totalOrderPerMonth ? Object.values(totalOrderPerMonth).reduce((sum, value) => sum + value, 0) : 0)
+                            }
+                        </Text>
                     </View>
-
                 </View>
             </View>
         </KeyboardAvoidingView>
@@ -391,5 +602,26 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         color: 'black',
+    },
+    filterButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 30,
+        marginBottom: 10,
+    },
+    filterButtonsText: {
+        color: 'white',
+        fontSize: 15,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    filterButton: {
+        padding: 10,
+        borderBottomWidth: 5,
+        borderBottomColor: 'rgba(120, 0, 0, 0.3)',
+    },
+    selectedFilterButton: {
+        //backgroundColor: 'rgba(120, 0, 0, 0.7)',
+        borderBottomColor: 'maroon',
     },
 });

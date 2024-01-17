@@ -103,7 +103,6 @@ export default function DriverMenu() {
         };
 
         fetchOrders();
-        /* refresh
         // Set interval to fetch orders every 2 seconds
         const intervalId = setInterval(() => {
             setIsRefreshing((prevIsRefreshing) => {
@@ -116,7 +115,6 @@ export default function DriverMenu() {
 
         // Clear the interval on component unmount
         return () => clearInterval(intervalId);
-        */
 
     }, [auth.currentUser.uid, firestore, selectedStatus, isRefreshing]);
 
