@@ -35,6 +35,7 @@ export default function DriverWallet() {
             }
         };
 
+        /*refresh
         const refreshBalance = () => {
             fetchBalance(); // Fetch balance initially
             refreshTransactions();
@@ -45,6 +46,7 @@ export default function DriverWallet() {
         };
 
         refreshBalance(); // Call the refresh function when component mounts
+        */
 
         return () => { }; // No cleanup required for this effect
     }, []);
@@ -102,7 +104,7 @@ export default function DriverWallet() {
             </View>
             <View style={styles.transactionDetailContainer}>
                 <Text style={styles.transactionDetailText}>Transaction: </Text>
-                <Text style={styles.transactionDetailText}>{item.status.toUpperCase()}</Text>
+                <Text style={styles.transactionDetailText}>{item?.status?.toUpperCase()}</Text>
             </View>
 
         </View>

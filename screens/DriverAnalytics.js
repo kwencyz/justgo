@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { FIREBASE_AUTH, FIRESTORE } from '../FirebaseConfig';
 
@@ -11,6 +11,8 @@ export default function DriverAnalyticsScreen() {
     const firestore = FIRESTORE;
 
     const [totalEarningsByDay, setTotalEarningsByDay] = useState(null);
+    const [selectedStatus, setSelectedStatus] = useState('daily');
+
 
     const { width: screenWidth } = useWindowDimensions();
 
@@ -19,6 +21,12 @@ export default function DriverAnalyticsScreen() {
         const day = String(currentDate.getDate()).padStart(2, '0');
         const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Month is zero-based
         return `${day}/${month}`;
+    };
+    const getMonthKey = (date) => {
+        const currentDate = new Date(date);
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Month is zero-based
+        return `${year}-${month}`;
     };
 
     const calculateTotalEarningsByDay = async (userId, days = 5) => {
@@ -74,12 +82,98 @@ export default function DriverAnalyticsScreen() {
 
         fetchTotalEarningsByDay();
 
+        /* refresh
         // Set interval to fetch total earnings by day every 2 seconds
         const intervalId = setInterval(fetchTotalEarningsByDay, 5000);
 
         // Clear the interval on component unmount
         return () => clearInterval(intervalId);
+        */
 
+    }, [auth.currentUser.uid, firestore]);
+
+    const [totalEarningPerDay, setTotalEarningPerDay] = useState(null);
+    const [totalOrderPerDay, setTotalOrderPerDay] = useState(null);
+
+    const calculateDailyOrders = async (userId, days = 1) => {
+        try {
+            // Fetch data from Firestore
+            const orderRef = collection(firestore, 'orderdetailsdb');
+            const q = query(
+                orderRef,
+                where('driverId', '==', userId),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const orderData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by day
+            const completedOrdersByDay = orderData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate();
+                const dayKey = getDayKey(timestamp);
+                if (data.status === 'completed') {
+                    acc[dayKey] = (acc[dayKey] || 0) + 1;
+                }
+                return acc;
+            }, {});
+
+            return completedOrdersByDay;
+        } catch (error) {
+            console.error('Error calculating daily completed orders:', error);
+            return null;
+        }
+    };
+
+    const calculateDailyEarnings = async (userId, days = 1) => {
+        try {
+            // Fetch data from Firestore
+            const walletRef = collection(firestore, 'driverwallet');
+            const q = query(
+                walletRef,
+                where('userId', '==', userId),
+                where('status', '==', 'earning'),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const walletData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by day and calculate total earnings
+            const totalsByDay = walletData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate();
+                const dayKey = getDayKey(timestamp);
+                const earningAmount = data.earningAmount || 0;
+
+                acc[dayKey] = (acc[dayKey] || 0) + earningAmount;
+                return acc;
+            }, {});
+
+            return totalsByDay;
+        } catch (error) {
+            console.error('Error calculating daily earnings:', error);
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        const fetchDailyData = async () => {
+            try {
+                const userId = auth.currentUser.uid;
+
+                // Calculate daily earnings
+                const dailyEarnings = await calculateDailyEarnings(userId, 1);
+                setTotalEarningPerDay(dailyEarnings);
+
+                // Calculate daily orders
+                const dailyOrders = await calculateDailyOrders(userId, 1);
+                setTotalOrderPerDay(dailyOrders);
+            } catch (error) {
+                console.error('Error fetching daily data:', error);
+            }
+        };
+
+        fetchDailyData();
     }, [auth.currentUser.uid, firestore]);
 
     const [totalEarningPerWeek, setTotalEarningPerWeek] = useState(null);
@@ -166,6 +260,90 @@ export default function DriverAnalyticsScreen() {
         fetchWeeklyData();
     }, [auth.currentUser.uid, firestore]);
 
+    const [totalEarningPerMonth, setTotalEarningPerMonth] = useState(null);
+    const [totalOrderPerMonth, setTotalOrderPerMonth] = useState(null);
+
+    const calculateMonthlyOrders = async (userId, days = 30) => {
+        try {
+            // Fetch data from Firestore
+            const orderRef = collection(firestore, 'orderdetailsdb');
+            const q = query(
+                orderRef,
+                where('driverId', '==', userId),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const orderData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by day
+            const completedOrdersByDay = orderData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate();
+                const monthKey = getMonthKey(timestamp);
+                if (data.status === 'completed') {
+                    acc[monthKey] = (acc[monthKey] || 0) + 1;
+                }
+                return acc;
+            }, {});
+
+            return completedOrdersByDay;
+        } catch (error) {
+            console.error('Error calculating monthly completed orders:', error);
+            return null;
+        }
+    };
+
+    const calculateMonthlyEarnings = async (userId, days = 30) => {
+        try {
+            // Fetch data from Firestore
+            const walletRef = collection(firestore, 'driverwallet');
+            const q = query(
+                walletRef,
+                where('userId', '==', userId),
+                where('status', '==', 'earning'),
+                orderBy('timestamp', 'desc'),
+                limit(days)
+            );
+            const querySnapshot = await getDocs(q);
+            const walletData = querySnapshot.docs.map((doc) => doc.data());
+
+            // Organize data by month and calculate total earnings
+            const totalsByMonth = walletData.reduce((acc, data) => {
+                const timestamp = data.timestamp.toDate();
+                const monthKey = getMonthKey(timestamp);
+                const earningAmount = data.earningAmount || 0;
+
+                acc[monthKey] = (acc[monthKey] || 0) + earningAmount;
+                return acc;
+            }, {});
+
+            return totalsByMonth;
+        } catch (error) {
+            console.error('Error calculating monthly earnings:', error);
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        const fetchMonthlyData = async () => {
+            try {
+                const userId = auth.currentUser.uid;
+
+                // Calculate monthly earnings
+                const monthlyEarnings = await calculateMonthlyEarnings(userId, 30);
+                setTotalEarningPerMonth(monthlyEarnings);
+
+                // Calculate total orders (you can replace this with your own function)
+                const monthlyOrders = await calculateMonthlyOrders(userId, 30);
+                setTotalOrderPerMonth(monthlyOrders);
+            } catch (error) {
+                console.error('Error fetching monthly data:', error);
+            }
+        };
+
+        fetchMonthlyData();
+    }, [auth.currentUser.uid, firestore]);
+
     return (
         <KeyboardAvoidingView style={styles.container}>
             <StatusBar backgroundColor="black" style='light' />
@@ -215,17 +393,52 @@ export default function DriverAnalyticsScreen() {
                         <Text>Loading...</Text>
                     )}
                 </View>
-                <Text style={{ marginTop: 20, ...styles.sectionHeader }}>Weekly Activity</Text>
+                <View style={styles.filterButtonsContainer}>
+                    <TouchableOpacity
+                        style={[styles.filterButton, selectedStatus === 'daily' && styles.selectedFilterButton]}
+                        onPress={() => setSelectedStatus('daily')}
+                    >
+                        <Text style={styles.filterButtonsText}>Daily</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.filterButton, selectedStatus === 'weekly' && styles.selectedFilterButton]}
+                        onPress={() => setSelectedStatus('weekly')}
+                    >
+                        <Text style={styles.filterButtonsText}>Weekly</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.filterButton, selectedStatus === 'monthly' && styles.selectedFilterButton]}
+                        onPress={() => setSelectedStatus('monthly')}
+                    >
+                        <Text style={styles.filterButtonsText}>Monthly</Text>
+                    </TouchableOpacity>
+                </View>
+                <Text style={{ marginTop: 10, marginBottom: 10, ...styles.sectionHeader }}>Your
+                    {selectedStatus === 'daily' && ' Daily'}
+                    {selectedStatus === 'weekly' && ' Weekly'}
+                    {selectedStatus === 'monthly' && ' Monthly'} Activity
+                </Text>
                 <View style={styles.detailsContainer}>
                     <View style={styles.dataContainer}>
                         <Text style={styles.dataText}>Total Earnings: </Text>
-                        <Text style={styles.dataText}>RM {totalEarningPerWeek ? Object.values(totalEarningPerWeek).reduce((sum, value) => sum + value, 0) : 0}</Text>
+                        <Text style={styles.dataText}>
+                            RM {selectedStatus === 'daily' ? (totalEarningPerDay ? Object.values(totalEarningPerDay).reduce((sum, value) => sum + value, 0) : 0) :
+                                selectedStatus === 'weekly' ? (totalEarningPerWeek ? Object.values(totalEarningPerWeek).reduce((sum, value) => sum + value, 0) : 0) :
+                                    (totalEarningPerMonth ? Object.values(totalEarningPerMonth).reduce((sum, value) => sum + value, 0) : 0)
+                            }
+                        </Text>
                     </View>
                     <View style={styles.dataContainer}>
                         <Text style={styles.dataText}>Total Order Completed: </Text>
-                        <Text style={styles.dataText}>{totalOrderPerWeek ? Object.values(totalOrderPerWeek).reduce((sum, value) => sum + value, 0) : 0}</Text>
+                        <Text style={styles.dataText}>
+                            {selectedStatus === 'daily' ? (totalOrderPerDay ? Object.values(totalOrderPerDay).reduce((sum, value) => sum + value, 0) : 0) :
+                                selectedStatus === 'weekly' ? (totalOrderPerWeek ? Object.values(totalOrderPerWeek).reduce((sum, value) => sum + value, 0) : 0) :
+                                    (totalOrderPerMonth ? Object.values(totalOrderPerMonth).reduce((sum, value) => sum + value, 0) : 0)
+                            }
+                        </Text>
                     </View>
-
                 </View>
             </View>
         </KeyboardAvoidingView>
@@ -390,5 +603,26 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         color: 'black',
+    },
+    filterButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 30,
+        marginBottom: 10,
+    },
+    filterButtonsText: {
+        color: 'white',
+        fontSize: 15,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    filterButton: {
+        padding: 10,
+        borderBottomWidth: 5,
+        borderBottomColor: 'rgba(120, 0, 0, 0.3)',
+    },
+    selectedFilterButton: {
+        //backgroundColor: 'rgba(120, 0, 0, 0.7)',
+        borderBottomColor: 'maroon',
     },
 });

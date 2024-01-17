@@ -146,6 +146,7 @@ export default function ConfirmationScreen() {
             }
         };
 
+
         const refreshBalance = () => {
             fetchWalletBalance();
 

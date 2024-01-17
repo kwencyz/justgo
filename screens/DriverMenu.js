@@ -55,7 +55,7 @@ export default function DriverMenu() {
         // Calculate the time difference in minutes
         const timeDifference = Math.abs((currentTime - orderTime) / (1000 * 60));
 
-        return timeDifference <= 2;
+        return timeDifference <= 1;
     };
 
     const renderItem = ({ item }) => (
@@ -103,6 +103,7 @@ export default function DriverMenu() {
         };
 
         fetchOrders();
+        /* refresh
         // Set interval to fetch orders every 2 seconds
         const intervalId = setInterval(() => {
             setIsRefreshing((prevIsRefreshing) => {
@@ -115,6 +116,7 @@ export default function DriverMenu() {
 
         // Clear the interval on component unmount
         return () => clearInterval(intervalId);
+        */
 
     }, [auth.currentUser.uid, firestore, selectedStatus, isRefreshing]);
 
