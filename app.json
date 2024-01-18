@@ -1,10 +1,10 @@
 {
   "expo": {
     "name": "login-ui",
-    "slug": "justgo",
+    "slug": "login-ui",
     "extra": {
       "eas": {
-        "projectId": "e2f0a93e-c285-442c-9b82-d20bde2e7f6a"
+        "projectId": "3304e16f-acb5-4981-b3ea-00b3f9db2f49"
       }
     },
     "android": {
